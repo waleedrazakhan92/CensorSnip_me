@@ -27,17 +27,65 @@ Run the command `python3 dummy_main.py` to filter the haram content.
 --start_time                (video) Start time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
 --end_time                  (video) End time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
 --skip_sound                (video) Skip the final merging of the audio back to the video for faster inference. Bool flag.
---num_imgs                  (images/video) If you want to manually select the number if images you want to process. Type int. Value less than number of frames in a video.
+--num_imgs                  (images) If you want to manually select the number if images you want to process. Type int. Value less than number of frames in a video.
 ```
 
-## Sample Command (video):
+# Sample commands
+Note that there are certain parameters that you need to set if you're working with videos and others if you're working with audios.
+## Sample Command 1 (complete video):
+In case you want to process the whole video you need to set the flags like these:
 ```
 python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
-    --adjust_fraction 1 \
+```
+## Sample Command 2 (trimmed video):
+In case you want to run the inference on only a certain time frame of a video i.e trim a video, you MUST set the following flags to their values:
+--do_trimming            
+--write_video_trim 
+--write_frames_trim 
+--start_time 120 
+--end_time 420 
+The do_trimming flag will tell the model to first perform trimming on the video. The write_video_trim flag will save the trimmed video and write_frames_trim flag will extract
+the frames from that video. The inference will be run on those frames.
+
+```
+python3 dummy_main.py \
+    --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
+    --path_input 'explicit_video.mp4' \
+    --path_results '../test_inference/' \
+    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --do_trimming \
+    --write_video_trim \
+    --write_frames_trim \
+    --start_time 20 \
+    --end_time 40 
+```
+## Sample Command 3 (video without sound):
+For very long videos the model takes very long time to drop explicit frames and recompile the video with synchronized sound. So if the sound is not important to you then
+simply recompile the video from the saved frames to skip sound. For that you need so set the following flags accordingly:
+--skip_sound
+--save_FLAG 
+The save_FLAG is absolutely necessery as it saves the infered frames from the video. And later it will use these sorted frames to recompile the video.
+```
+python3 dummy_main.py \
+    --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
+    --path_input 'explicit_video.mp4' \
+    --path_results '../test_inference/' \
+    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --do_trimming \
+    --skip_sound
+```
+
+## Sample Command 4 (all variables)
+```
+python3 dummy_main.py \
+    --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
+    --path_input 'explicit_video.mp4' \
+    --path_results '../test_inference/' \
+    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
     --save_FLAG \
     --do_trimming \
     --write_video_trim \
