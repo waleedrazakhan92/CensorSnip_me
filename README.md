@@ -75,7 +75,7 @@ python3 dummy_main.py \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
-    --do_trimming \
+    --save_FLAG
     --skip_sound
 ```
 
