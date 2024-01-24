@@ -1,4 +1,3 @@
-
 from utils.display_utils import *
 from utils.misc_utils import *
 from utils.prediction_utils import *
@@ -9,6 +8,10 @@ from utils.video_utils import *
 import os
 import cv2
 import shutil
+
+from ultralytics import YOLO
+import argparse
+import json
 
 def custom_yolov8_inference_video(porn_model,input_path,path_write,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=90,
@@ -148,10 +151,6 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,box_color_dic
 
 
 
-from ultralytics import YOLO
-import argparse
-import json
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--path_model",type=str, help="path pretrained model checkpoint")
 parser.add_argument("--path_input",type=str, help="path of input video or a folder of images")
@@ -187,10 +186,32 @@ box_color_dict = {0:(255,0,0),
                   4:(255,0,255)}
 
 class_confidence_dict = {0:0.5, 1:0.5, 2:0.5, 3:0.5, 4:0.5}
-label_dict = None
+
+###########################
+## assert checks
+###########################
+if args.skip_sound==True:
+    assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize skip_sound '
+
+if args.start_time!=None or args.end_time!=None:
+    assert args.do_trimming==True, 'set do_trimming flag == True in order to perform inference only on a part of the video'
+
+if args.do_trimming==True:
+    assert os.path.isfile(args.path_input)==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
+    assert (args.write_video_trim==True and args.write_frames_trim==True), 'when do_trimming is set to True, make sure you set the write_video_trim and write_frames_trim flags to True'
+
+assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
+
+assert type(args.img_quality)==int, 'image quality must be a integer value between 1-100'
+
+###########################
+## load model
 ###########################
 custom_yolo = YOLO(args.path_model)
 
+###########################
+## read variables
+###########################
 path_input = args.path_input
 path_write_main = args.path_results
 adjust_fraction = args.adjust_fraction
@@ -199,14 +220,13 @@ num_imgs = args.num_imgs
 save_FLAG = args.save_FLAG
 img_quality = args.img_quality
 
-assert len(args.class_confidence_dict)<=len(class_confidence_dict)
 
 for i in range(0,len(args.class_confidence_dict)):
     class_confidence_dict[i] = args.class_confidence_dict[i]
 
 ## for trimming make sure you input video in the input_path
 if args.do_trimming==True:
-    assert os.path.isfile(path_input)==True, 'make sure *path_input* is a video file'
+    # assert os.path.isfile(path_input)==True, 'make sure *path_input* is a video file'
     write_video_trim = args.write_video_trim
     write_frames_trim = args.write_frames_trim
     start_time = args.start_time
@@ -230,8 +250,8 @@ paths_dict_all,failed_images_all,passed_images_all,all_predictions = custom_yolo
                                     adjust_fraction=adjust_fraction,
                                     num_imgs=num_imgs,figsize=(6,3),box_color_dict=box_color_dict,
                                     save_txt=save_FLAG,save_original=save_FLAG,save_bbox=save_FLAG,save_blur=save_FLAG,display_bbox=False,
-                                    label_dict=label_dict,img_quality=img_quality,
-                                                    class_confidence_dict=class_confidence_dict)
+                                    label_dict=None,img_quality=img_quality,
+                                    class_confidence_dict=class_confidence_dict)
 
 
 if  os.path.isfile(path_input)==True:
@@ -240,7 +260,7 @@ if  os.path.isfile(path_input)==True:
         print('-------------------')
         print('Skipping sound for faster inference...')
         print('-------------------')
-        assert save_FLAG==True, 'set save_FLAG to True so it can directly make clean video from saved images'
+        # assert save_FLAG==True, 'set save_FLAG to True so it can directly make clean video from saved images'
         in_dir = os.path.join(path_write_main,'images_empty/')
         sorted_frames_list = get_sorted_frames(in_dir)
         all_sorted_images = append_complete_path(in_dir,sorted_frames_list)
