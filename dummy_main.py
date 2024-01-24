@@ -213,8 +213,13 @@ if os.path.isfile(args.path_input)==True:
         assert os.path.isdir(args.path_input)==True, 'To use num_imgs make sure the input path is a directiory containing images'
 
 ## working with images
-##elif os.path.isdir(args.path_input)==True:
-    
+elif os.path.isdir(args.path_input)==True:
+    assert args.do_trimming==False, 'do_trimming can only be used with videos'
+    assert args.skip_sound==False, 'skip_sound can only be used with videos'
+    assert args.write_video_trim==False, 'write_video_trim can only be used with videos'
+    assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
+    assert args.start_time==None, 'start_time can only be used with videos'
+    assert args.end_time==None, 'end_time can only be used with videos'
 
 
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
