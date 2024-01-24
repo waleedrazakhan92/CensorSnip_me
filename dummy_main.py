@@ -28,7 +28,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,box_color_dic
         'blur':os.path.join(path_write,'blurred/'),
         'blur_empty':os.path.join(path_write,'blurred_empty/'),
         'txt':os.path.join(path_write,'txt_files/'),
-        'txt_empty':os.path.join(path_write,'txt_files_empty/')
+        'txt_empty':os.path.join(path_write,'txt_files_empty/'),
+        'videos':os.path.join(path_write,'videos/')
     }
 
     make_folders_multi(*paths_dict.values())
@@ -243,7 +244,6 @@ if args.do_trimming==True:
     trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,end_time,
                                                     write_video=write_video_trim,write_frames=write_frames_trim,save_ext='.jpg')
     
-    video_name = os.path.splitext(path_input.split('/')[-1])[0]
     path_input = trimmed_vid_path
 
 
@@ -260,6 +260,7 @@ paths_dict_all,failed_images_all,passed_images_all,all_predictions = custom_yolo
 
 
 if  os.path.isfile(path_input)==True:
+    video_name = os.path.splitext(path_input.split('/')[-1])[0]
     out_vid_filtered = os.path.join(path_write_main,'videos',video_name+'_filtered.mp4')
     if args.skip_sound==True:
         print('-------------------')
