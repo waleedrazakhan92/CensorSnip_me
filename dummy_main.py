@@ -192,24 +192,22 @@ class_confidence_dict = {0:0.5, 1:0.5, 2:0.5, 3:0.5, 4:0.5}
 ###########################
 
 ## working with videos
-if os.path.isdir(args.path_input)==True:
-    if args.start_time!=None or args.end_time!=None:
-        assert args.do_trimming==True, 'set do_trimming flag == True in order to perform inference only on a part of the video'
-
+if os.path.isfile(args.path_input)==True:
     if args.do_trimming==True:
         assert os.path.isfile(args.path_input)==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
         assert (args.write_video_trim==True and args.write_frames_trim==True), 'when do_trimming is set to True, make sure you set the write_video_trim and write_frames_trim flags to True'
+        assert (args.start_time!=None and args.end_time!=None), 'set positive integer values for the *start_time* and *end_time*' 
+        ##assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize do_trimming'
 
     if args.skip_sound==True:
         assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize skip_sound'
 
-elif os.path.isfile(args.path_input)==True:
+elif os.path.isdir(args.path_input)==True:
     if args.num_imgs!=None:
         assert os.path.isdir(args.path_input)==True, 'To use num_imgs make sure the input path is a directiory containing images'
 
 
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
-
 assert type(args.img_quality)==int, 'image quality must be a integer value between 1-100'
 
 ###########################
