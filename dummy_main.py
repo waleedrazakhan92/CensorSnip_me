@@ -13,6 +13,8 @@ from ultralytics import YOLO
 import argparse
 import json
 
+import sys
+
 def custom_yolov8_inference_video(porn_model,input_path,path_write,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=90,
                                   class_confidence_dict=None):
@@ -176,8 +178,8 @@ parser.add_argument("--skip_sound", help="write back video without sound", actio
 
 args = parser.parse_args()
 
+print('-------------------------')
 print(args)
-
 
 ## defaults
 box_color_dict = {0:(255,0,0),
@@ -191,6 +193,10 @@ class_confidence_dict = {0:0.5, 1:0.5, 2:0.5, 3:0.5, 4:0.5}
 ###########################
 ## assert checks
 ###########################
+if os.path.isfile(args.path_input)==False and os.path.isdir(args.path_input)==False:
+    print("------------------------------------------------------")
+    print("ERROR!!! please make sure the file/directory exists. Exiting program")
+    sys.exit(0)
 
 ## working with videos
 if os.path.isfile(args.path_input)==True:
@@ -203,6 +209,7 @@ if os.path.isfile(args.path_input)==True:
     if args.skip_sound==True:
         assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize skip_sound'
 
+## working with images
 elif os.path.isdir(args.path_input)==True:
     if args.num_imgs!=None:
         assert os.path.isdir(args.path_input)==True, 'To use num_imgs make sure the input path is a directiory containing images'
