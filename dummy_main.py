@@ -209,10 +209,12 @@ if os.path.isfile(args.path_input)==True:
     if args.skip_sound==True:
         assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize skip_sound'
 
-## working with images
-elif os.path.isdir(args.path_input)==True:
     if args.num_imgs!=None:
         assert os.path.isdir(args.path_input)==True, 'To use num_imgs make sure the input path is a directiory containing images'
+
+## working with images
+##elif os.path.isdir(args.path_input)==True:
+    
 
 
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
