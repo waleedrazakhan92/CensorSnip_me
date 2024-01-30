@@ -14,6 +14,7 @@ import argparse
 import json
 
 import sys
+import imageio
 
 def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=90,
@@ -78,10 +79,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                 out_vid_name = os.path.splitext(input_path.split('/')[-1])[0]
                 out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered.mp4')
                 
-                fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
-                vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
-
-                import imageio
+                ##fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
+                ##vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
                 vid_writer = imageio.get_writer(out_vid_name, fps=fps)
                 
         
