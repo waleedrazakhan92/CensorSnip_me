@@ -15,7 +15,7 @@ import json
 
 import sys
 
-def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
+def custom_yolov8_inference_video(porn_model,input_path,path_write,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=90,
                                   class_confidence_dict=None):
 
@@ -36,7 +36,13 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
 
     make_folders_multi(*paths_dict.values())
 
-    if is_video==False:
+    # all_images = glob(os.path.join(path_images, '*'))
+    # print('Total Images:',len(all_images))
+    # all_images = random.sample(all_images,num_imgs) if num_imgs!=None else all_images
+    # print('Selected Images:',len(all_images))
+
+    is_video = False
+    if os.path.isdir(input_path):
         sorted_names = get_sorted_frames(input_path)
         all_images = append_complete_path(input_path,sorted_names)
         print('Total Images:',len(all_images))
@@ -45,17 +51,12 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         print('Selected Images:',len(all_images))
         total_images = len(all_images)
 
-    elif is_video==True:
+    elif os.path.isfile(input_path):
+        is_video = True
         cap = cv2.VideoCapture(input_path)
-        ##fps = VideoFileClip(input_path).fps
-        fps = int(cap.get(5))
-        frame_width = int(cap.get(3))
-        frame_height = int(cap.get(4))
         total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         total_images = num_imgs if num_imgs!=None else total_images
-        
 
-    out_vid_name = None # dummy name in case input is a directory
     passed_images = []
     failed_images = []
     all_predictions = {}  ## for debug
@@ -73,22 +74,12 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             if not ret:
                 break
             img_org = img.copy()
-            
-            if i==0:
-                out_vid_name = os.path.splitext(input_path.split('/')[-1])[0]
-                out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered.mp4')
-                
-                fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
-                vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
 
-                import imageio
-                vid_writer = imageio.get_writer(out_vid_name, fps=fps)
-                
-        
-        img_h,img_w = img.shape[:2]
-        img_blur = cv2.blur(img.copy(),(int(img_h/2),int(img_w/2)))
+        img_blur = cv2.blur(img.copy(),(50,50))
         final_blur = img.copy()
+        img_h,img_w = img.shape[:2]
 
+        #W pred_porn = kiss_model.predict(img_path, confidence=conf, overlap=over).json()
         pred_porn = porn_model.predict(img)[0]
 
         pass_fail_dict = {}
@@ -158,15 +149,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         if display_bbox==True:
             display_multi(img,figsize=figsize,bgr=True)
 
-        if is_video==True:
-            if pass_fail_dict!={}:
-                vid_writer.append_data(img_blur[:,:,::-1])
-            else:
-                vid_writer.append_data(img_org[:,:,::-1])
 
-    vid_writer.close()
-
-    return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
+    return paths_dict,failed_images,passed_images,all_predictions
 
 
 
@@ -181,9 +165,6 @@ parser.add_argument("--adjust_fraction", help="fraction [0-1] you want to manual
 
 parser.add_argument("--img_quality", help="manually adjust the image image quality of the saved images (JPEG)", default=100, type=int)
 parser.add_argument("--save_FLAG", help="flag to save (save bbox,blur,original,text file)", action="store_true")
-parser.add_argument("--save_bbox", help="flag to save bbox", action="store_true")
-parser.add_argument("--save_txt", help="flag to save text file", action="store_true")
-parser.add_argument("--save_blur", help="flag to save blur,", action="store_true")
 
 ## trimming flags
 parser.add_argument("--do_trimming", help="do video trimming or not", action="store_true")
@@ -191,7 +172,6 @@ parser.add_argument("--write_video_trim", help="write video after trimming", act
 parser.add_argument("--write_frames_trim", help="write frames of the trimmed video", action="store_true")
 parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None, type=float)
 parser.add_argument("--end_time", help="end time(seconds) for video trimming", default=None, type=float)
-
 
 ## extras
 parser.add_argument("--skip_sound", help="write back video without sound", action="store_true")
@@ -218,22 +198,22 @@ if os.path.isfile(args.path_input)==False and os.path.isdir(args.path_input)==Fa
     print("ERROR!!! please make sure the file/directory exists. Exiting program")
     sys.exit(0)
 
-## check if video or a directory
-is_video = True if os.path.isfile(args.path_input) else False
-
 ## working with videos
-if is_video==True:
+if os.path.isfile(args.path_input)==True:
     if args.do_trimming==True:
-        assert is_video==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
+        assert os.path.isfile(args.path_input)==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
         assert (args.write_video_trim==True and args.write_frames_trim==True), 'when do_trimming is set to True, make sure you set the write_video_trim and write_frames_trim flags to True'
-        assert (args.start_time!=None and args.end_time!=None), 'set positive integer values for the *start_time* and *end_time*'
+        assert (args.start_time!=None and args.end_time!=None), 'set positive integer values for the *start_time* and *end_time*' 
         ##assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize do_trimming'
 
+    if args.skip_sound==True:
+        assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize skip_sound'
+
     if args.num_imgs!=None:
-        assert is_video==False, 'To use num_imgs make sure the input path is a directiory containing images'
+        assert os.path.isdir(args.path_input)==True, 'To use num_imgs make sure the input path is a directiory containing images'
 
 ## working with images
-elif is_video==False:
+elif os.path.isdir(args.path_input)==True:
     assert args.do_trimming==False, 'do_trimming can only be used with videos'
     assert args.skip_sound==False, 'skip_sound can only be used with videos'
     assert args.write_video_trim==False, 'write_video_trim can only be used with videos'
@@ -274,10 +254,10 @@ if args.do_trimming==True:
     print('-------------------')
     print('Trimming down the video from {}s to {}s'.format(start_time,end_time))
     print('-------------------')
-
+    
     trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,end_time,
                                                     write_video=write_video_trim,write_frames=write_frames_trim,save_ext='.jpg')
-
+    
     path_input = trimmed_vid_path
 
 
@@ -285,17 +265,28 @@ print('-------------------')
 print('Performing inference...')
 print('-------------------')
 
-paths_dict_all,failed_images_all,passed_images_all,all_predictions,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
-                                    is_video,adjust_fraction=adjust_fraction,
+paths_dict_all,failed_images_all,passed_images_all,all_predictions = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
+                                    adjust_fraction=adjust_fraction,
                                     num_imgs=num_imgs,figsize=(6,3),box_color_dict=box_color_dict,
-                                    save_txt=args.save_txt,save_original=save_FLAG,save_bbox=args.save_bbox,save_blur=args.save_blur,display_bbox=False,
+                                    save_txt=save_FLAG,save_original=save_FLAG,save_bbox=save_FLAG,save_blur=save_FLAG,display_bbox=False,
                                     label_dict=None,img_quality=img_quality,
                                     class_confidence_dict=class_confidence_dict)
 
 
-if is_video==True and args.skip_sound==False:
+if  os.path.isfile(path_input)==True:
     video_name = os.path.splitext(path_input.split('/')[-1])[0]
-    final_vid_path = os.path.join(paths_dict_all['videos'],video_name+'_final.mp4')
-    add_sound_back(path_input,out_vid_name,final_vid_path)
-    os.remove(out_vid_name)
-
+    out_vid_filtered = os.path.join(path_write_main,'videos',video_name+'_filtered.mp4')
+    if args.skip_sound==True:
+        print('-------------------')
+        print('Skipping sound for faster inference...')
+        print('-------------------')
+        # assert save_FLAG==True, 'set save_FLAG to True so it can directly make clean video from saved images'
+        in_dir = os.path.join(path_write_main,'images_empty/')
+        sorted_frames_list = get_sorted_frames(in_dir)
+        all_sorted_images = append_complete_path(in_dir,sorted_frames_list)
+        write_vid_from_frames(all_sorted_images,out_vid_filtered,frame_width=None,frame_height=None,fps=30)
+    else:
+        print('-------------------')
+        print('Dropping unwanted frames...')
+        print('-------------------')
+        drop_unwanted_frames(path_input,out_vid_filtered, failed_images_all)
