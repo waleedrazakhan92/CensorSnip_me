@@ -20,7 +20,10 @@ Run the command `python3 dummy_main.py` to filter the haram content.
 ## Optional flags
 --class_confidence_dict     (important images/video) List of class probabilities to filter the content. Lower the number means tighter filtering. Type list. Value [0-1] 
 --adjust_fraction           (optional images/video) Manually adjust the bounding box size if you want to display the results. Type fraction. Value float. default 1. bigger number means bigger bounding box.
---save_FLAG                 (images/video) Save the intermediate blurred and bounding box images along with the text labels. Bool flag
+--save_FLAG                 (optional images/video) Save the intermediate images. Bool flag
+--save_bbox                 (optional images/video) Save the resultant images with bounding boxes drawn on them.
+--save_blur                 (optional images/video) Save the images with explicit regions blurred in them.
+--save_txt                  (optional images/video) Save the txt files with results in them. 
 --do_trimming               (video) If you want to trim the input video to make a shorter version. Bool flag.
 --write_frames_trim         (video) Write frames from the trimmed video on the disc if you chose to do trimming. Bool flag
 --start_time                (video) Start time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
@@ -83,14 +86,23 @@ python3 dummy_main.py \
     --skip_sound 
 ```
 ## Sample Command (images folder):
-If you want to run inference on a directory of images then the following command will run inference on all the images and store them in a desired directory:
+If you want to run inference on a directory of images then the following command will run inference on all the images and store them in a desired directory.
+*Make sure to have atleast one of the four flags raised to visualize the results.*
+--save_FLAG     Will save explicit images in one directory and the non-explicit in the other
+--save_bbox     Will save explicit images(with drawn bounding boxes) in one directory and the non-explicit in the other 
+--save_blur     Will save explicit images(with blurred explicit regions) in one directory and the non-explicit in the other 
+--save_txt      Will save the text files with results for explicit images in one directory and the non-explicit in the other
 ```
 python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
     --path_input 'folder/with/explicit_images/' \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.7 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
-    --adjust_fraction 1 
+    --adjust_fraction 1 \
+    --save_FLAG \
+    --save_bbox \
+    --save_blur \
+    --save_txt 
 ```
 You can limit the number of images on which you want to run inference on by adding the num_imgs flag. The resultant command will look like this:
 ```
@@ -100,5 +112,9 @@ python3 dummy_main.py \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.7 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
     --adjust_fraction 1 \
+    --save_FLAG \
+    --save_bbox \
+    --save_blur \
+    --save_txt \
     --num_imgs 100
 ```
