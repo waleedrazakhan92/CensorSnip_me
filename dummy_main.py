@@ -15,9 +15,15 @@ import json
 
 import sys
 import imageio
+from glob import glob
+
+def delete_unused_paths(paths_dict,keep_paths_dict):
+    for k in keep_paths_dict.keys():
+        if keep_paths_dict[k]==False:
+            shutil.rmtree(paths_dict[k])
 
 def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
-                      adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=90,
+                      adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=100,
                                   class_confidence_dict=None):
 
     assert type(label_dict)==dict or label_dict==None
@@ -34,12 +40,25 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         'txt_empty':os.path.join(path_write,'txt_files_empty/'),
         'videos':os.path.join(path_write,'videos/')
     }
+    keep_paths_dict = {
+        'images':save_original,
+        'images_empty':save_original,
+        'bboxes':save_bbox,
+        'bboxes_empty':save_bbox,
+        'blur':save_blur,
+        'blur_empty':save_blur,
+        'txt':save_txt,
+        'txt_empty':save_txt,
+        'videos':is_video
+    }
 
     make_folders_multi(*paths_dict.values())
+    delete_unused_paths(paths_dict,keep_paths_dict)
 
     if is_video==False:
-        sorted_names = get_sorted_frames(input_path)
-        all_images = append_complete_path(input_path,sorted_names)
+        # sorted_names = get_sorted_frames(input_path)
+        # all_images = append_complete_path(input_path,sorted_names)
+        all_images = glob(os.path.join(input_path,'*'))
         print('Total Images:',len(all_images))
 
         all_images = all_images[:num_imgs] if num_imgs!=None else all_images
@@ -54,7 +73,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         frame_height = int(cap.get(4))
         total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         total_images = num_imgs if num_imgs!=None else total_images
-        
+
 
     out_vid_name = None # dummy name in case input is a directory
     passed_images = []
@@ -74,16 +93,16 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             if not ret:
                 break
             img_org = img.copy()
-            
+
             if i==0:
                 out_vid_name = os.path.splitext(input_path.split('/')[-1])[0]
                 out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered.mp4')
-                
+
                 ##fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
                 ##vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
                 vid_writer = imageio.get_writer(out_vid_name, fps=fps)
-                
-        
+
+
         img_h,img_w = img.shape[:2]
         img_blur = cv2.blur(img.copy(),(int(img_h/2),int(img_w/2)))
         final_blur = img.copy()
@@ -163,7 +182,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             else:
                 vid_writer.append_data(img_org[:,:,::-1])
 
-    vid_writer.close()
+    if is_video==True:
+        vid_writer.close()
 
     return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
 
@@ -186,7 +206,7 @@ parser.add_argument("--save_blur", help="flag to save blur,", action="store_true
 
 ## trimming flags
 parser.add_argument("--do_trimming", help="do video trimming or not", action="store_true")
-parser.add_argument("--write_video_trim", help="write video after trimming", action="store_true")
+##parser.add_argument("--write_video_trim", help="write video after trimming", action="store_true")
 parser.add_argument("--write_frames_trim", help="write frames of the trimmed video", action="store_true")
 parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None, type=float)
 parser.add_argument("--end_time", help="end time(seconds) for video trimming", default=None, type=float)
@@ -224,7 +244,7 @@ is_video = True if os.path.isfile(args.path_input) else False
 if is_video==True:
     if args.do_trimming==True:
         assert is_video==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
-        assert (args.write_video_trim==True and args.write_frames_trim==True), 'when do_trimming is set to True, make sure you set the write_video_trim and write_frames_trim flags to True'
+        ##assert args.write_frames_trim==True, 'when do_trimming is set to True, make sure you set the write_frames_trim'
         assert (args.start_time!=None and args.end_time!=None), 'set positive integer values for the *start_time* and *end_time*'
         ##assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize do_trimming'
 
@@ -235,7 +255,7 @@ if is_video==True:
 elif is_video==False:
     assert args.do_trimming==False, 'do_trimming can only be used with videos'
     assert args.skip_sound==False, 'skip_sound can only be used with videos'
-    assert args.write_video_trim==False, 'write_video_trim can only be used with videos'
+    ##assert args.write_video_trim==False, 'write_video_trim can only be used with videos'
     assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
     assert args.start_time==None, 'start_time can only be used with videos'
     assert args.end_time==None, 'end_time can only be used with videos'
@@ -266,7 +286,7 @@ for i in range(0,len(args.class_confidence_dict)):
 
 ## for trimming make sure you input video in the input_path
 if args.do_trimming==True:
-    write_video_trim = args.write_video_trim
+    ##write_video_trim = args.write_video_trim
     write_frames_trim = args.write_frames_trim
     start_time = args.start_time
     end_time = args.end_time
@@ -275,7 +295,7 @@ if args.do_trimming==True:
     print('-------------------')
 
     trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,end_time,
-                                                    write_video=write_video_trim,write_frames=write_frames_trim,save_ext='.jpg')
+                                                    write_video=True,write_frames=write_frames_trim,save_ext='.jpg')
 
     path_input = trimmed_vid_path
 
