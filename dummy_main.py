@@ -100,7 +100,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
 
                 # fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
                 # vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
-                vid_writer = imageio.get_writer(out_vid_name, fps=fps)
+                vid_writer = imageio.get_writer(out_vid_name, fps=fps, macro_block_size=1)
 
 
         img_h,img_w = img.shape[:2]
