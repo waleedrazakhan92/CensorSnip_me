@@ -3,6 +3,13 @@ An advanced tool leveraging machine learning and Python technology. Our intellig
 
 
 # Instructions:
+To control the strictness of the algorithm, set the *--class_confidence_dict* to low values like 0.2 or 0.3 etc.
+Below is the index of the probability dictionary:
+```
+['EXPOSED_BREAST_F', 'EXPOSED_BUTTOCKS', 'EXPOSED_GENITALIA_F', 'EXPOSED_GENITALIA_M', 'KISS']
+```
+The first index represents exposed breasts, the second buttocks and so on.
+
 ```
 Clone the repository:
 git clone repository.git
