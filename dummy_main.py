@@ -67,12 +67,12 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
 
     elif is_video==True:
         cap = cv2.VideoCapture(input_path)
-        ##fps = VideoFileClip(input_path).fps
+        # fps = VideoFileClip(input_path).fps
         fps = int(cap.get(5))
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
         total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        total_images = num_imgs if num_imgs!=None else total_images
+        # total_images = num_imgs if num_imgs!=None else total_images
 
 
     out_vid_name = None # dummy name in case input is a directory
@@ -98,8 +98,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                 out_vid_name = os.path.splitext(input_path.split('/')[-1])[0]
                 out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered.mp4')
 
-                ##fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
-                ##vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
+                # fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
+                # vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
                 vid_writer = imageio.get_writer(out_vid_name, fps=fps)
 
 
