@@ -149,7 +149,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                        one_pred.start_point[0]:one_pred.end_point[0]] = img_blur[one_pred.start_point[1]:one_pred.end_point[1],
                                                                                  one_pred.start_point[0]:one_pred.end_point[0]]
 
-            if pass_fail_dict=={} and save_txt==True :#one_pred.b_conf>=filter_prob:
+            if save_txt==True: ##pass_fail_dict=={} and save_txt==True :#one_pred.b_conf>=filter_prob:
                 ## only write predictions which model is confident on
                 one_txt_line = [one_pred.c_lab,one_pred.x_c_norm,one_pred.y_c_norm,one_pred.b_w_norm,one_pred.b_h_norm]
                 one_txt_line = [str(x) for x in one_txt_line]
