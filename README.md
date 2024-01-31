@@ -22,7 +22,6 @@ Run the command `python3 dummy_main.py` to filter the haram content.
 --adjust_fraction           (optional images/video) Manually adjust the bounding box size if you want to display the results. Type fraction. Value float. default 1. bigger number means bigger bounding box.
 --save_FLAG                 (images/video) Save the intermediate blurred and bounding box images along with the text labels. Bool flag
 --do_trimming               (video) If you want to trim the input video to make a shorter version. Bool flag.
---write_video_trim          (video) Write the trim video on the disc if you chose to do trimming. Bool flag.
 --write_frames_trim         (video) Write frames from the trimmed video on the disc if you chose to do trimming. Bool flag
 --start_time                (video) Start time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
 --end_time                  (video) End time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
@@ -44,12 +43,9 @@ python3 dummy_main.py \
 ## Sample Command 2 (trimmed video):
 In case you want to run the inference on only a certain time frame of a video i.e trim a video, you MUST set the following flags to their values:
 --do_trimming            
---write_video_trim 
---write_frames_trim 
 --start_time 120 
 --end_time 420 
-The do_trimming flag will tell the model to first perform trimming on the video. The write_video_trim flag will save the trimmed video and write_frames_trim flag will extract
-the frames from that video. The inference will be run on those frames.
+The do_trimming flag will tell the model to first perform trimming on the video. The inference will be run on that trimmed video.
 
 ```
 python3 dummy_main.py \
@@ -58,8 +54,6 @@ python3 dummy_main.py \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
     --do_trimming \
-    --write_video_trim \
-    --write_frames_trim \
     --start_time 20 \
     --end_time 40 
 ```
@@ -67,15 +61,12 @@ python3 dummy_main.py \
 For very long videos the model takes very long time to drop explicit frames and recompile the video with synchronized sound. So if the sound is not important to you then
 simply recompile the video from the saved frames to skip sound. For that you need so set the following flags accordingly:
 --skip_sound
---save_FLAG 
-The save_FLAG is absolutely necessery as it saves the infered frames from the video. And later it will use these sorted frames to recompile the video.
 ```
 python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
-    --save_FLAG
     --skip_sound
 ```
 
@@ -86,16 +77,22 @@ python3 dummy_main.py \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
-    --save_FLAG \
     --do_trimming \
-    --write_video_trim \
-    --write_frames_trim \
     --start_time 120 \
     --end_time 420 \
-    --skip_sound \
-    # --num_imgs 50 \
+    --skip_sound 
 ```
 ## Sample Command (images folder):
+If you want to run inference on a directory of images then the following command will run inference on all the images and store them in a desired directory:
+```
+python3 dummy_main.py \
+    --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
+    --path_input 'folder/with/explicit_images/' \
+    --path_results '../test_inference/' \
+    --class_confidence_dict 0.2 0.2 0.2 0.7 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --adjust_fraction 1 
+```
+You can limit the number of images on which you want to run inference on by adding the num_imgs flag. The resultant command will look like this:
 ```
 python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
@@ -103,6 +100,5 @@ python3 dummy_main.py \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.7 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
     --adjust_fraction 1 \
-    --save_FLAG \
-    --num_imgs 300
+    --num_imgs 100
 ```
