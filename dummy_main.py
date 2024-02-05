@@ -133,12 +133,12 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             if is_video==True:
                 if pass_fail_dict!={}:
                     if gpu_writer==True:
-                            vid_writer.write(img_blur[:,:,::-1])
+                            vid_writer.write(img_blur)
                     else:
                         vid_writer.append_data(img_blur[:,:,::-1])
                 else:
                     if gpu_writer==True:
-                        vid_writer.write(img_org[:,:,::-1])
+                        vid_writer.write(img_org)
                     else:
                         vid_writer.append_data(img_org[:,:,::-1])
 
