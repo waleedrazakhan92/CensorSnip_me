@@ -35,11 +35,19 @@ def trim_video_and_extract_frames(video_path,path_write,start_time=None,end_time
     if (start_time==None) and (end_time==None):
         shutil.copy(video_path,temp_vid_path)
     else:
-        ffmpeg_extract_subclip(video_path, start_time, end_time, targetname=temp_vid_path)
-        ##start_time = seconds_to_sexagesimal_string(start_time)
-        ##end_time = seconds_to_sexagesimal_string(end_time)
+        ##ffmpeg_extract_subclip(video_path, start_time, end_time, targetname=temp_vid_path)
+        start_time_sexa = seconds_to_sexagesimal_string(start_time)
+        end_time_sexa = seconds_to_sexagesimal_string(end_time-start_time)
+
+        ## freezed frames problem
+        ## https://superuser.com/questions/1167958/video-cut-with-missing-frames-in-ffmpeg/1168028#1168028
         ##trim_command = ['ffmpeg','-y', '-i', video_path, '-ss', start_time, '-to', end_time, '-c:v', 'copy','-c:a', 'copy', temp_vid_path]
-        ##subprocess.run(trim_command)
+        ##trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',end_time_sexa,'-i', video_path,'-c','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
+        trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',end_time_sexa,'-i', video_path,'-c:v','copy','-c:a','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
+
+        print('Trim Command:')
+        print(trim_command)
+        subprocess.run(trim_command)
 
     if write_frames==True:
         # Read the cut video and write frames in a folder

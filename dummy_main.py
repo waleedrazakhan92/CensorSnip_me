@@ -202,8 +202,11 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                 else:
                     vid_writer.append_data(img_org[:,:,::-1])
 
-    ##if is_video==True:
-    ##    vid_writer.close()
+    if is_video==True:
+        try:
+            vid_writer.close()
+        except:
+            pass
 
     return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
 
@@ -231,6 +234,7 @@ parser.add_argument("--write_frames_trim", help="write frames of the trimmed vid
 parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None, type=float)
 parser.add_argument("--end_time", help="end time(seconds) for video trimming", default=None, type=float)
 
+## extended flags
 parser.add_argument("--gpu_writer", action="store_true")
 
 
@@ -314,6 +318,7 @@ if args.do_trimming==True:
     end_time = args.end_time
     print('-------------------')
     print('Trimming down the video from {}s to {}s'.format(start_time,end_time))
+    print('Trimming down the video from {}s to {}s'.format(seconds_to_sexagesimal_string(start_time),seconds_to_sexagesimal_string(end_time)))
     print('-------------------')
 
     trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,end_time,
