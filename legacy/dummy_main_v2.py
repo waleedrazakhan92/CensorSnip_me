@@ -26,7 +26,7 @@ def delete_unused_paths(paths_dict,keep_paths_dict):
 
 def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=100,
-                                  class_confidence_dict=None,gpu_writer=False,pred_batch=1):
+                                  class_confidence_dict=None,gpu_writer=False):
 
     assert type(label_dict)==dict or label_dict==None
 
@@ -89,134 +89,118 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     passed_images = []
     failed_images = []
     all_predictions = {}  ## for debug
-    for i in tqdm(range(0,total_images,pred_batch),mininterval=10):
+    for i in tqdm(range(0,total_images),mininterval=10):
         if is_video==False:
             img_path = all_images[i]
             image_name = img_path.split('/')[-1]
             image_name = os.path.splitext(image_name)[0]
             img = cv2.imread(img_path)
         else:
+            img_path = os.path.join('/dummy_name/',str(i)+'.jpg')
+            image_name = img_path.split('/')[-1]
+            image_name = os.path.splitext(image_name)[0]
+            ret, img = cap.read()
+            if not ret:
+                break
+            img_org = img.copy()
+
             if i==0:
                 out_vid_name,out_vid_ext = os.path.splitext(input_path.split('/')[-1])
                 out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered'+out_vid_ext)
+
+                # fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
+                # vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
+
                 if gpu_writer==True:
                     vid_writer = ffmpegcv.VideoWriterNV(out_vid_name, cap.codec, fps)
                 else:
                     vid_writer = imageio.get_writer(out_vid_name, fps=fps, macro_block_size=1)
-            
-            img_batch = []
-            for j in range(0,pred_batch):
 
-                img_path = os.path.join('/dummy_name/',str(i)+'.jpg')
-                image_name = img_path.split('/')[-1]
-                image_name = os.path.splitext(image_name)[0]
-                ret, img = cap.read()
-                if not ret:
-                    break
 
-                img_batch.append(img)
+        img_h,img_w = img.shape[:2]
+        img_blur = cv2.blur(img.copy(),(int(img_h/2),int(img_w/2)))
+        final_blur = img.copy()
 
-        pred_porn_all = porn_model.predict(img_batch)
+        pred_porn = porn_model.predict(img)[0]
 
-        for k in range(0,len(img_batch)):
-            img = img_batch[k]
-            img_h,img_w = img.shape[:2]
-            img_blur = cv2.blur(img.copy(),(int(img_h/2),int(img_w/2)))
-            final_blur = img.copy()
-            img_org = img.copy()
+        pass_fail_dict = {}
+        pass_fail_dict = pass_fail_image(pred_porn,box_color_dict,label_dict,adjust_fraction,class_confidence_dict,img_h,img_w)
 
-            pred_porn = pred_porn_all[k]
-            pass_fail_dict = {}
-            pass_fail_dict = pass_fail_image(pred_porn,box_color_dict,label_dict,adjust_fraction,class_confidence_dict,img_h,img_w)
-        
+        ######################
+        ## for debug
+        one_img_pred = []
+        if len(pred_porn)!=0:
+            for o in range(0,len(pred_porn)):
+                one_pred_img = extract_prediction_points(pred_porn,o,box_color_dict,label_dict,adjust_fraction,img_h,img_w)
+                one_img_pred.append(one_pred_img)
 
-            if is_video==True:
-                if pass_fail_dict!={}:
-                    if gpu_writer==True:
-                            vid_writer.write(img_blur[:,:,::-1])
-                    else:
-                        vid_writer.append_data(img_blur[:,:,::-1])
+        all_predictions[i] = one_img_pred
+        ######################
+
+        if pass_fail_dict!={}:
+            failed_images.append(i)
+        else:
+            passed_images.append(i)
+
+        if pass_fail_dict!={}:#len(pred_porn)!=0:
+            path_write_images = paths_dict['images']
+            path_write_bboxes = paths_dict['bboxes']
+            path_write_blur = paths_dict['blur']
+            txt_file_path = os.path.join(paths_dict['txt'],image_name+'.txt')
+        else:
+            path_write_images = paths_dict['images_empty']
+            path_write_bboxes = paths_dict['bboxes_empty']
+            path_write_blur = paths_dict['blur_empty']
+            txt_file_path = os.path.join(paths_dict['txt_empty'],image_name+'.txt')
+
+        for p in range(0,len(pred_porn)):
+            one_pred = extract_prediction_points(pred_porn,p,box_color_dict,label_dict,adjust_fraction,img_h,img_w)
+            img = cv2.rectangle(img, one_pred.start_point, one_pred.end_point,one_pred.b_color, 3)
+            img = cv2.putText(img, one_pred.b_txt, one_pred.start_point, cv2.FONT_HERSHEY_SIMPLEX ,
+                    1, one_pred.b_color, 2, cv2.LINE_AA)
+
+            final_blur[one_pred.start_point[1]:one_pred.end_point[1],
+                       one_pred.start_point[0]:one_pred.end_point[0]] = img_blur[one_pred.start_point[1]:one_pred.end_point[1],
+                                                                                 one_pred.start_point[0]:one_pred.end_point[0]]
+
+            if save_txt==True: ##pass_fail_dict=={} and save_txt==True :#one_pred.b_conf>=filter_prob:
+                ## only write predictions which model is confident on
+                one_txt_line = [one_pred.c_lab,one_pred.x_c_norm,one_pred.y_c_norm,one_pred.b_w_norm,one_pred.b_h_norm]
+                one_txt_line = [str(x) for x in one_txt_line]
+                one_txt_line = ' '.join(one_txt_line)
+
+                write_preds_txt_file(txt_file_path,one_txt_line)
+
+
+        if ((len(pred_porn)==0) or (os.path.isfile(txt_file_path)==False)) and (save_txt==True):
+            write_preds_txt_file(txt_file_path,'')
+
+        if save_bbox==True:
+            cv2.imwrite(os.path.join(path_write_bboxes,img_path.split('/')[-1]),img,[cv2.IMWRITE_JPEG_QUALITY, img_quality])
+
+        if save_original==True:
+            if is_video==False:
+                shutil.copy(img_path,path_write_images)
+            else:
+                cv2.imwrite(os.path.join(path_write_images,img_path.split('/')[-1]),img_org,[cv2.IMWRITE_JPEG_QUALITY, img_quality])
+
+        if save_blur==True:
+            cv2.imwrite(os.path.join(path_write_blur,img_path.split('/')[-1]),final_blur,[cv2.IMWRITE_JPEG_QUALITY, img_quality])
+
+        if display_bbox==True:
+            display_multi(img,figsize=figsize,bgr=True)
+
+        if is_video==True:
+            if pass_fail_dict!={}:
+                if gpu_writer==True:
+                        vid_writer.write(img_blur[:,:,::-1])
                 else:
-                    if gpu_writer==True:
-                        vid_writer.write(img_org[:,:,::-1])
-                    else:
-                        vid_writer.append_data(img_org[:,:,::-1])
-
-    #     ######################
-    #     ## for debug
-    #     one_img_pred = []
-    #     if len(pred_porn)!=0:
-    #         for o in range(0,len(pred_porn)):
-    #             one_pred_img = extract_prediction_points(pred_porn,o,box_color_dict,label_dict,adjust_fraction,img_h,img_w)
-    #             one_img_pred.append(one_pred_img)
-
-    #     all_predictions[i] = one_img_pred
-    #     ######################
-
-    #     if pass_fail_dict!={}:
-    #         failed_images.append(i)
-    #     else:
-    #         passed_images.append(i)
-
-    #     if pass_fail_dict!={}:#len(pred_porn)!=0:
-    #         path_write_images = paths_dict['images']
-    #         path_write_bboxes = paths_dict['bboxes']
-    #         path_write_blur = paths_dict['blur']
-    #         txt_file_path = os.path.join(paths_dict['txt'],image_name+'.txt')
-    #     else:
-    #         path_write_images = paths_dict['images_empty']
-    #         path_write_bboxes = paths_dict['bboxes_empty']
-    #         path_write_blur = paths_dict['blur_empty']
-    #         txt_file_path = os.path.join(paths_dict['txt_empty'],image_name+'.txt')
-
-    #     for p in range(0,len(pred_porn)):
-    #         one_pred = extract_prediction_points(pred_porn,p,box_color_dict,label_dict,adjust_fraction,img_h,img_w)
-    #         img = cv2.rectangle(img, one_pred.start_point, one_pred.end_point,one_pred.b_color, 3)
-    #         img = cv2.putText(img, one_pred.b_txt, one_pred.start_point, cv2.FONT_HERSHEY_SIMPLEX ,
-    #                 1, one_pred.b_color, 2, cv2.LINE_AA)
-
-    #         final_blur[one_pred.start_point[1]:one_pred.end_point[1],
-    #                    one_pred.start_point[0]:one_pred.end_point[0]] = img_blur[one_pred.start_point[1]:one_pred.end_point[1],
-    #                                                                              one_pred.start_point[0]:one_pred.end_point[0]]
-
-    #         if save_txt==True: ##pass_fail_dict=={} and save_txt==True :#one_pred.b_conf>=filter_prob:
-    #             ## only write predictions which model is confident on
-    #             one_txt_line = [one_pred.c_lab,one_pred.x_c_norm,one_pred.y_c_norm,one_pred.b_w_norm,one_pred.b_h_norm]
-    #             one_txt_line = [str(x) for x in one_txt_line]
-    #             one_txt_line = ' '.join(one_txt_line)
-
-    #             write_preds_txt_file(txt_file_path,one_txt_line)
-
-
-    #     if ((len(pred_porn)==0) or (os.path.isfile(txt_file_path)==False)) and (save_txt==True):
-    #         write_preds_txt_file(txt_file_path,'')
-
-    #     if save_bbox==True:
-    #         cv2.imwrite(os.path.join(path_write_bboxes,img_path.split('/')[-1]),img,[cv2.IMWRITE_JPEG_QUALITY, img_quality])
-
-    #     if save_original==True:
-    #         if is_video==False:
-    #             shutil.copy(img_path,path_write_images)
-    #         else:
-    #             cv2.imwrite(os.path.join(path_write_images,img_path.split('/')[-1]),img_org,[cv2.IMWRITE_JPEG_QUALITY, img_quality])
-
-    #     if save_blur==True:
-    #         cv2.imwrite(os.path.join(path_write_blur,img_path.split('/')[-1]),final_blur,[cv2.IMWRITE_JPEG_QUALITY, img_quality])
-
-    #     if display_bbox==True:
-    #         display_multi(img,figsize=figsize,bgr=True)
-
-    #     if is_video==True:
-    #         if pass_fail_dict!={}:
-    #             if gpu_writer==True:
-    #                     vid_writer.write(img_blur[:,:,::-1])
-    #             else:
-    #                 vid_writer.append_data(img_blur[:,:,::-1])
-    #         else:
-    #             if gpu_writer==True:
-    #                 vid_writer.write(img_org[:,:,::-1])
-    #             else:
-    #                 vid_writer.append_data(img_org[:,:,::-1])
+                    vid_writer.append_data(img_blur[:,:,::-1])
+            else:
+                if gpu_writer==True:
+                    vid_writer.write(img_org[:,:,::-1])
+                else:
+                    vid_writer.append_data(img_org[:,:,::-1])
 
     if is_video==True:
         try:
@@ -224,8 +208,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         except:
             pass
 
-    # return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
-    return paths_dict,out_vid_name
+    return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
+
 
 
 parser = argparse.ArgumentParser()
@@ -252,7 +236,7 @@ parser.add_argument("--duration", help="end time(seconds) for video trimming", d
 
 ## extended flags
 parser.add_argument("--gpu_writer", action="store_true")
-parser.add_argument("--pred_batch", help="for batch prediction", default=1, type=int)
+
 
 ## extras
 parser.add_argument("--skip_sound", help="write back video without sound", action="store_true")
@@ -343,21 +327,13 @@ print('-------------------')
 print('Performing inference...')
 print('-------------------')
 
-# paths_dict_all,failed_images_all,passed_images_all,all_predictions,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
-#                                     is_video,adjust_fraction=adjust_fraction,
-#                                     num_imgs=num_imgs,figsize=(6,3),box_color_dict=box_color_dict,
-#                                     save_txt=args.save_txt,save_original=save_FLAG,save_bbox=args.save_bbox,save_blur=args.save_blur,display_bbox=False,
-#                                     label_dict=None,img_quality=img_quality,
-#                                     class_confidence_dict=class_confidence_dict,
-#                                     gpu_writer=args.gpu_writer,pred_batch=args.pred_batch)
-
-paths_dict_all,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
+paths_dict_all,failed_images_all,passed_images_all,all_predictions,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
                                     is_video,adjust_fraction=adjust_fraction,
                                     num_imgs=num_imgs,figsize=(6,3),box_color_dict=box_color_dict,
                                     save_txt=args.save_txt,save_original=save_FLAG,save_bbox=args.save_bbox,save_blur=args.save_blur,display_bbox=False,
                                     label_dict=None,img_quality=img_quality,
                                     class_confidence_dict=class_confidence_dict,
-                                    gpu_writer=args.gpu_writer,pred_batch=args.pred_batch)
+                                    gpu_writer=args.gpu_writer)
 
 
 if is_video==True and args.skip_sound==False:
