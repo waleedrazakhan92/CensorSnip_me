@@ -16,6 +16,8 @@ import json
 import sys
 import imageio
 from glob import glob
+import subprocess
+import ffmpegcv
 
 def delete_unused_paths(paths_dict,keep_paths_dict):
     for k in keep_paths_dict.keys():
@@ -24,7 +26,7 @@ def delete_unused_paths(paths_dict,keep_paths_dict):
 
 def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=100,
-                                  class_confidence_dict=None):
+                                  class_confidence_dict=None,gpu_writer=False):
 
     assert type(label_dict)==dict or label_dict==None
 
@@ -66,14 +68,22 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         total_images = len(all_images)
 
     elif is_video==True:
-        cap = cv2.VideoCapture(input_path)
-        # fps = VideoFileClip(input_path).fps
-        fps = int(cap.get(5))
-        frame_width = int(cap.get(3))
-        frame_height = int(cap.get(4))
-        total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        # total_images = num_imgs if num_imgs!=None else total_images
-
+        if gpu_writer==True:
+            ###################################
+            ## gpu
+            ###################################
+            cap = ffmpegcv.VideoCaptureNV(input_path)
+            fps = cap.fps
+            frame_width = cap.width
+            frame_height = cap.height
+            total_images = cap.count
+            print(cap)
+        else:
+            cap = cv2.VideoCapture(input_path)
+            fps = cap.get(5)
+            frame_width = int(cap.get(3))
+            frame_height = int(cap.get(4))
+            total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     out_vid_name = None # dummy name in case input is a directory
     passed_images = []
@@ -95,12 +105,16 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             img_org = img.copy()
 
             if i==0:
-                out_vid_name = os.path.splitext(input_path.split('/')[-1])[0]
-                out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered.mp4')
+                out_vid_name,out_vid_ext = os.path.splitext(input_path.split('/')[-1])
+                out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered'+out_vid_ext)
 
                 # fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')  # You can change the codec as needed
                 # vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
-                vid_writer = imageio.get_writer(out_vid_name, fps=fps, macro_block_size=1)
+
+                if gpu_writer==True:
+                    vid_writer = ffmpegcv.VideoWriterNV(out_vid_name, cap.codec, fps)
+                else:
+                    vid_writer = imageio.get_writer(out_vid_name, fps=fps, macro_block_size=1)
 
 
         img_h,img_w = img.shape[:2]
@@ -178,12 +192,18 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
 
         if is_video==True:
             if pass_fail_dict!={}:
-                vid_writer.append_data(img_blur[:,:,::-1])
+                if gpu_writer==True:
+                        vid_writer.write(img_blur[:,:,::-1])
+                else:
+                    vid_writer.append_data(img_blur[:,:,::-1])
             else:
-                vid_writer.append_data(img_org[:,:,::-1])
+                if gpu_writer==True:
+                    vid_writer.write(img_org[:,:,::-1])
+                else:
+                    vid_writer.append_data(img_org[:,:,::-1])
 
-    if is_video==True:
-        vid_writer.close()
+    ##if is_video==True:
+    ##    vid_writer.close()
 
     return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
 
@@ -210,6 +230,8 @@ parser.add_argument("--do_trimming", help="do video trimming or not", action="st
 parser.add_argument("--write_frames_trim", help="write frames of the trimmed video", action="store_true")
 parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None, type=float)
 parser.add_argument("--end_time", help="end time(seconds) for video trimming", default=None, type=float)
+
+parser.add_argument("--gpu_writer", action="store_true")
 
 
 ## extras
@@ -309,12 +331,15 @@ paths_dict_all,failed_images_all,passed_images_all,all_predictions,out_vid_name 
                                     num_imgs=num_imgs,figsize=(6,3),box_color_dict=box_color_dict,
                                     save_txt=args.save_txt,save_original=save_FLAG,save_bbox=args.save_bbox,save_blur=args.save_blur,display_bbox=False,
                                     label_dict=None,img_quality=img_quality,
-                                    class_confidence_dict=class_confidence_dict)
+                                    class_confidence_dict=class_confidence_dict,
+                                    gpu_writer=args.gpu_writer)
 
 
 if is_video==True and args.skip_sound==False:
-    video_name = os.path.splitext(path_input.split('/')[-1])[0]
-    final_vid_path = os.path.join(paths_dict_all['videos'],video_name+'_final.mp4')
-    add_sound_back(path_input,out_vid_name,final_vid_path)
-    os.remove(out_vid_name)
+    video_name,video_ext = os.path.splitext(path_input.split('/')[-1])
+    final_vid_path = os.path.join(paths_dict_all['videos'],video_name+'_final'+video_ext)
+    ##add_sound_back(path_input,out_vid_name,final_vid_path)
+    ##os.remove(out_vid_name)
 
+    ffmpeg_command = ['ffmpeg', '-y', '-i', out_vid_name, '-i', path_input, '-c', 'copy', '-map', '0:0', '-map', '1:1', final_vid_path]
+    subprocess.run(ffmpeg_command)

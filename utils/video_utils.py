@@ -12,18 +12,23 @@ import shutil
 
 from utils.misc_utils import make_folders_multi
 
+from datetime import timedelta
+import subprocess
+
+def seconds_to_sexagesimal_string(seconds):
+    timedelta_object = timedelta(seconds=seconds)
+    hours, remainder = divmod(timedelta_object.total_seconds(), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
+
+
 def trim_video_and_extract_frames(video_path,path_write,start_time=None,end_time=None,write_video=True,write_frames=True,save_ext='.png'):
     clip = VideoFileClip(video_path) ## just to read duration
 
-    if start_time==None:
-        start_time = 0
-    if end_time==None:
-        end_time = clip.duration
-
-    video_name = os.path.splitext(video_path.split('/')[-1])[0]
+    video_name,video_ext = os.path.splitext(video_path.split('/')[-1])
     path_write_imgs = os.path.join(path_write,'frames/')
     path_write_vid = os.path.join(path_write,'videos/')
-    temp_vid_path = os.path.join(path_write_vid,video_name+'_trimmed.mp4')
+    temp_vid_path = os.path.join(path_write_vid,video_name+'_trimmed'+video_ext)
 
     make_folders_multi(path_write,path_write_imgs,path_write_vid)
     # Cut the video for desired duration
@@ -31,6 +36,10 @@ def trim_video_and_extract_frames(video_path,path_write,start_time=None,end_time
         shutil.copy(video_path,temp_vid_path)
     else:
         ffmpeg_extract_subclip(video_path, start_time, end_time, targetname=temp_vid_path)
+        ##start_time = seconds_to_sexagesimal_string(start_time)
+        ##end_time = seconds_to_sexagesimal_string(end_time)
+        ##trim_command = ['ffmpeg','-y', '-i', video_path, '-ss', start_time, '-to', end_time, '-c:v', 'copy','-c:a', 'copy', temp_vid_path]
+        ##subprocess.run(trim_command)
 
     if write_frames==True:
         # Read the cut video and write frames in a folder
@@ -84,11 +93,7 @@ def drop_unwanted_frames(video_path,out_vid_path,frames_to_drop):
     if last_t < clip.duration:
         subclips.append(clip.subclip(last_t))
 
-    # Concatenate subclips
     final_clip = concatenate_videoclips(subclips)
-
-    # Output the result
-    
     final_clip.write_videofile(out_vid_path, codec="libx264", audio_codec="aac",fps=frame_rate,threads=4, preset='ultrafast')
 
 
