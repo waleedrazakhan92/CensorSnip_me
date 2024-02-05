@@ -231,8 +231,8 @@ parser.add_argument("--save_blur", help="flag to save blur,", action="store_true
 parser.add_argument("--do_trimming", help="do video trimming or not", action="store_true")
 ##parser.add_argument("--write_video_trim", help="write video after trimming", action="store_true")
 parser.add_argument("--write_frames_trim", help="write frames of the trimmed video", action="store_true")
-parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None, type=float)
-parser.add_argument("--end_time", help="end time(seconds) for video trimming", default=None, type=float)
+parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None)
+parser.add_argument("--duration", help="end time(seconds) for video trimming", default=None)
 
 ## extended flags
 parser.add_argument("--gpu_writer", action="store_true")
@@ -271,7 +271,7 @@ if is_video==True:
     if args.do_trimming==True:
         assert is_video==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
         ##assert args.write_frames_trim==True, 'when do_trimming is set to True, make sure you set the write_frames_trim'
-        assert (args.start_time!=None and args.end_time!=None), 'set positive integer values for the *start_time* and *end_time*'
+        assert (args.start_time!=None and args.duration!=None), 'set positive integer values for the *start_time* and *duration*'
         ##assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize do_trimming'
 
     if args.num_imgs!=None:
@@ -284,7 +284,7 @@ elif is_video==False:
     ##assert args.write_video_trim==False, 'write_video_trim can only be used with videos'
     assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
     assert args.start_time==None, 'start_time can only be used with videos'
-    assert args.end_time==None, 'end_time can only be used with videos'
+    assert args.duration==None, 'duration can only be used with videos'
 
 
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
@@ -315,13 +315,9 @@ if args.do_trimming==True:
     ##write_video_trim = args.write_video_trim
     write_frames_trim = args.write_frames_trim
     start_time = args.start_time
-    end_time = args.end_time
-    print('-------------------')
-    print('Trimming down the video from {}s to {}s'.format(start_time,end_time))
-    print('Trimming down the video from {}s to {}s'.format(seconds_to_sexagesimal_string(start_time),seconds_to_sexagesimal_string(end_time)))
-    print('-------------------')
+    duration = args.duration
 
-    trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,end_time,
+    trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,duration,
                                                     write_video=True,write_frames=write_frames_trim,save_ext='.jpg')
 
     path_input = trimmed_vid_path

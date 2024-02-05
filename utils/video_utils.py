@@ -22,7 +22,7 @@ def seconds_to_sexagesimal_string(seconds):
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
-def trim_video_and_extract_frames(video_path,path_write,start_time=None,end_time=None,write_video=True,write_frames=True,save_ext='.png'):
+def trim_video_and_extract_frames(video_path,path_write,start_time=None,duration=None,write_video=True,write_frames=True,save_ext='.png'):
     clip = VideoFileClip(video_path) ## just to read duration
 
     video_name,video_ext = os.path.splitext(video_path.split('/')[-1])
@@ -32,18 +32,27 @@ def trim_video_and_extract_frames(video_path,path_write,start_time=None,end_time
 
     make_folders_multi(path_write,path_write_imgs,path_write_vid)
     # Cut the video for desired duration
-    if (start_time==None) and (end_time==None):
+    if (start_time==None) and (duration==None):
         shutil.copy(video_path,temp_vid_path)
     else:
-        ##ffmpeg_extract_subclip(video_path, start_time, end_time, targetname=temp_vid_path)
-        start_time_sexa = seconds_to_sexagesimal_string(start_time)
-        end_time_sexa = seconds_to_sexagesimal_string(end_time-start_time)
+        ##ffmpeg_extract_subclip(video_path, start_time, duration, targetname=temp_vid_path)
+        if type(start_time)!=str or type(duration)!=str:
+            start_time_sexa = seconds_to_sexagesimal_string(start_time)
+            duration_sexa = seconds_to_sexagesimal_string(duration)  
+        else:    
+            start_time_sexa = str(start_time)
+            duration_sexa = str(duration)
+            
 
+        print('----------------------------')
+        print('Trimming.... From {}, Duration {}'.format(start_time_sexa,duration_sexa))
+        print('----------------------------')
         ## freezed frames problem
         ## https://superuser.com/questions/1167958/video-cut-with-missing-frames-in-ffmpeg/1168028#1168028
-        ##trim_command = ['ffmpeg','-y', '-i', video_path, '-ss', start_time, '-to', end_time, '-c:v', 'copy','-c:a', 'copy', temp_vid_path]
-        ##trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',end_time_sexa,'-i', video_path,'-c','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
-        trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',end_time_sexa,'-i', video_path,'-c:v','copy','-c:a','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
+        ##trim_command = ['ffmpeg','-y', '-i', video_path, '-ss', start_time, '-to', duration, '-c:v', 'copy','-c:a', 'copy', temp_vid_path]
+        ##trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',duration_sexa,'-i', video_path,'-c','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
+        trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',duration_sexa,
+        '-i', video_path,'-c:v','copy','-c:a','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
 
         print('Trim Command:')
         print(trim_command)
