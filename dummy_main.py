@@ -74,7 +74,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         elif video_reader=='cpu_ffmpeg':
             cap = ffmpegcv.VideoCapture(input_path)
         elif video_reader=='cv2':
-            cap = cv2.VideoCapture(input_path) 
+            cap = cv2.VideoCapture(input_path)
 
         if video_reader in ['gpu_ffmpeg','cpu_ffmpeg']:
             fps = cap.fps
@@ -83,14 +83,14 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             total_images = cap.count
             write_encoding = cap.codec if write_encoding==None else write_encoding
         elif video_reader=='cv2':
-            fps = cap.get(5)  
-            frame_width = int(cap.get(3)) 
-            frame_height = int(cap.get(4)) 
+            fps = cap.get(5)
+            frame_width = int(cap.get(3))
+            frame_height = int(cap.get(4))
             total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             if write_encoding==None:
                 in_enc = int(cap.get(cv2.CAP_PROP_FOURCC))
                 write_encoding = chr(in_enc&0xff) + chr((in_enc>>8)&0xff) + chr((in_enc>>16)&0xff) + chr((in_enc>>24)&0xff)
-                
+
 
         print('----------------------------')
         print('Video Info:')
@@ -138,7 +138,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                 print('\n----------------------------')
                 print('Final codec: ',write_encoding)
                 print('----------------------------')
-                
+
             img_batch = []
             for j in range(0,pred_batch):
 
@@ -165,7 +165,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             pred_porn = pred_porn_all[k]
             pass_fail_dict = {}
             pass_fail_dict = pass_fail_image(pred_porn,box_color_dict,label_dict,adjust_fraction,class_confidence_dict,img_h,img_w)
-        
+
 
             if is_video==True:
                 video_img = img_blur if pass_fail_dict!={} else img_org
@@ -279,8 +279,8 @@ parser.add_argument("--start_time", help="start time(seconds) for video trimming
 parser.add_argument("--duration", help="end time(seconds) for video trimming", default=None)
 
 ## extended flags
-parser.add_argument("--video_reader",type=str,default='cv2')
-parser.add_argument("--video_writer",type=str,default='imageio')
+parser.add_argument("--video_reader",type=str,default='gpu_ffmpeg')
+parser.add_argument("--video_writer",type=str,default='gpu_ffmpeg')
 parser.add_argument("--pred_batch", help="for batch prediction", default=1, type=int)
 parser.add_argument("--write_encoding",default=None,type=str, help="override the default encoding with which to write the final video")
 
@@ -324,7 +324,7 @@ if is_video==True:
         assert is_video==False, 'To use num_imgs make sure the input path is a directiory containing images'
 
     assert (args.video_reader in ['gpu_ffmpeg','cpu_ffmpeg','cv2'])==True, 'please select valid video reader from [gpu_ffmpeg,cpu_ffmpeg,cv2]'
-    assert (args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]' 
+    assert (args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]'
 
     if args.write_encoding!=None:
         if args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg']:
@@ -343,7 +343,7 @@ elif is_video==False:
     assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
     assert args.start_time==None, 'start_time can only be used with videos'
     assert args.duration==None, 'duration can only be used with videos'
-    
+
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
 assert type(args.img_quality)==int, 'image quality must be a integer value between 1-100'
 

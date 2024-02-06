@@ -38,11 +38,11 @@ def trim_video_and_extract_frames(video_path,path_write,start_time=None,duration
         ##ffmpeg_extract_subclip(video_path, start_time, duration, targetname=temp_vid_path)
         if (':' in start_time)==False or (':' in duration)==False:
             start_time_sexa = seconds_to_sexagesimal_string(int(start_time))
-            duration_sexa = seconds_to_sexagesimal_string(int(duration))  
-        else:    
+            duration_sexa = seconds_to_sexagesimal_string(int(duration))
+        else:
             start_time_sexa = str(start_time)
             duration_sexa = str(duration)
-            
+
 
         print('----------------------------')
         print('Trimming.... From {}, Duration {}'.format(start_time_sexa,duration_sexa))
