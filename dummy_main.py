@@ -90,14 +90,15 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             if write_encoding==None:
                 in_enc = int(cap.get(cv2.CAP_PROP_FOURCC))
                 write_encoding = chr(in_enc&0xff) + chr((in_enc>>8)&0xff) + chr((in_enc>>16)&0xff) + chr((in_enc>>24)&0xff)
+                
 
-        print('---------------------------------')
+        print('----------------------------')
         print('Video Info:')
         print('FPS:',fps)
         print('Total Images:',total_images)
         print('Frame Width:',frame_width,'Frame Height:',frame_height)
         print('Video Codec:',write_encoding)
-
+        print('----------------------------')
 
     out_vid_name = None # dummy name in case input is a directory
     passed_images = []
@@ -122,12 +123,22 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                 elif video_writer=='cpu_ffmpeg':
                     vid_writer = ffmpegcv.VideoWriter(out_vid_name, write_encoding, fps)
                 elif video_writer=='cv2':
+                    if write_encoding not in ['XVID','mp4v','mjpg']:
+                        write_encoding = 'mp4v' # default encoding
+
                     fourcc = cv2.VideoWriter_fourcc(*write_encoding)
                     vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
                 elif video_writer=='imageio':
-                    vid_writer = imageio.get_writer(out_vid_name, fps=fps,codec=write_encoding, macro_block_size=1)
+                    vid_data = iio.immeta(input_path,exclude_applied=False)
+                    if write_encoding not in ['hevc','h264']:
+                        write_encoding = vid_data['codec']
 
+                    vid_writer = imageio.get_writer(out_vid_name, fps=fps,codec=write_encoding,quality=10,macro_block_size=1)
 
+                print('\n----------------------------')
+                print('Final codec: ',write_encoding)
+                print('----------------------------')
+                
             img_batch = []
             for j in range(0,pred_batch):
 
@@ -271,7 +282,7 @@ parser.add_argument("--duration", help="end time(seconds) for video trimming", d
 parser.add_argument("--video_reader",type=str,default='cv2')
 parser.add_argument("--video_writer",type=str,default='imageio')
 parser.add_argument("--pred_batch", help="for batch prediction", default=1, type=int)
-parser.add_argument("--write_encoding",type=str, help="override the default encoding with which to write the final video")
+parser.add_argument("--write_encoding",default=None,type=str, help="override the default encoding with which to write the final video")
 
 ## extras
 parser.add_argument("--skip_sound", help="write back video without sound", action="store_true")
@@ -312,6 +323,18 @@ if is_video==True:
     if args.num_imgs!=None:
         assert is_video==False, 'To use num_imgs make sure the input path is a directiory containing images'
 
+    assert (args.video_reader in ['gpu_ffmpeg','cpu_ffmpeg','cv2'])==True, 'please select valid video reader from [gpu_ffmpeg,cpu_ffmpeg,cv2]'
+    assert (args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]' 
+
+    if args.write_encoding!=None:
+        if args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg']:
+            assert (args.write_encoding in ['hevc_nvenc','h264_nvenc'])==True, 'please select valid encoding from [hevc_nvenc,h264_nvenc]'
+        elif args.video_writer=='cv2':
+            assert (args.write_encoding in ['XVID','mp4v','mjpg'])==True, 'please select valid encoding from [XVID,mp4v,mjpg]'
+        elif args.video_writer=='imageio':
+            assert (args.write_encoding in ['hevc','h264'])==True, 'please select valid encoding from [hevc,h264]'
+
+
 ## working with images
 elif is_video==False:
     assert args.do_trimming==False, 'do_trimming can only be used with videos'
@@ -320,9 +343,7 @@ elif is_video==False:
     assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
     assert args.start_time==None, 'start_time can only be used with videos'
     assert args.duration==None, 'duration can only be used with videos'
-    assert (args.video_reader in ['gpu_ffmpeg','cpu_ffmpeg','cv2'])==True, 'please select valid video reader from [gpu_ffmpeg,cpu_ffmpeg,cv2]'
-    assert (args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]' 
-
+    
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
 assert type(args.img_quality)==int, 'image quality must be a integer value between 1-100'
 
