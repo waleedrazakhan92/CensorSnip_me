@@ -51,7 +51,7 @@ def trim_video_and_extract_frames(video_path,path_write,start_time=None,duration
         ## https://superuser.com/questions/1167958/video-cut-with-missing-frames-in-ffmpeg/1168028#1168028
         ##trim_command = ['ffmpeg','-y', '-i', video_path, '-ss', start_time, '-to', duration, '-c:v', 'copy','-c:a', 'copy', temp_vid_path]
         ##trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',duration_sexa,'-i', video_path,'-c','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
-        trim_command = ['ffmpeg','-y','-ss',start_time_sexa,'-t',duration_sexa,
+        trim_command = ['ffmpeg','-loglevel','error','-y','-ss',start_time_sexa,'-t',duration_sexa,
         '-i', video_path,'-c:v','copy','-c:a','copy','-avoid_negative_ts', 'make_zero',temp_vid_path]
 
         print('Trim Command:')

@@ -359,9 +359,9 @@ if args.do_trimming==True:
     path_input = trimmed_vid_path
 
 
-print('-------------------')
+print('----------------------------')
 print('Performing inference...')
-print('-------------------')
+print('----------------------------')
 
 # paths_dict_all,failed_images_all,passed_images_all,all_predictions,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
 #                                     is_video,adjust_fraction=adjust_fraction,
@@ -382,10 +382,13 @@ paths_dict_all,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_inp
 
 
 if is_video==True and args.skip_sound==False:
+    print('----------------------------')
+    print('Adding sound back...')
+    print('----------------------------')
     video_name,video_ext = os.path.splitext(path_input.split('/')[-1])
     final_vid_path = os.path.join(paths_dict_all['videos'],video_name+'_final'+video_ext)
     ##add_sound_back(path_input,out_vid_name,final_vid_path)
     ##os.remove(out_vid_name)
 
-    ffmpeg_command = ['ffmpeg', '-y', '-i', out_vid_name, '-i', path_input, '-c', 'copy', '-map', '0:0', '-map', '1:1', final_vid_path]
-    subprocess.run(ffmpeg_command,text=False)
+    ffmpeg_command = ['ffmpeg','-loglevel','error', '-y', '-i', out_vid_name, '-i', path_input, '-c', 'copy', '-map', '0:0', '-map', '1:1', final_vid_path]
+    subprocess.run(ffmpeg_command)
