@@ -27,7 +27,8 @@ def delete_unused_paths(paths_dict,keep_paths_dict):
 
 def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_color_dict=None,save_txt=True,save_original=True,save_bbox=True,save_blur=True,display_bbox=False,
                       adjust_fraction=1,num_imgs=4,figsize=(3,3),label_dict=None,img_quality=100,
-                                  class_confidence_dict=None,gpu_writer=False,pred_batch=1):
+                                  class_confidence_dict=None,video_reader='cv2',video_writer='imageio',pred_batch=1,
+                                  write_encoding=None):
 
     assert type(label_dict)==dict or label_dict==None
 
@@ -59,8 +60,6 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     delete_unused_paths(paths_dict,keep_paths_dict)
 
     if is_video==False:
-        # sorted_names = get_sorted_frames(input_path)
-        # all_images = append_complete_path(input_path,sorted_names)
         all_images = glob(os.path.join(input_path,'*'))
         print('Total Images:',len(all_images))
 
@@ -70,34 +69,44 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
 
     elif is_video==True:
         ##vid_data = iio.immeta(input_path,exclude_applied=False)
-        if gpu_writer==True:
-            ###################################
-            ## gpu
-            ###################################
+        if video_reader=='gpu_ffmpeg':
             cap = ffmpegcv.VideoCaptureNV(input_path)
-            fps = cap.fps
-            frame_width = cap.width
-            frame_height = cap.height
-            total_images = cap.count
-            print(cap)
-        else:
+        elif video_reader=='cpu_ffmpeg':
             cap = ffmpegcv.VideoCapture(input_path)
+        elif video_reader=='cv2':
+            cap = cv2.VideoCapture(input_path) 
+
+        if video_reader in ['gpu_ffmpeg','cpu_ffmpeg']:
             fps = cap.fps
             frame_width = cap.width
             frame_height = cap.height
             total_images = cap.count
-            print(cap)
-        # else:
-        #     cap = cv2.VideoCapture(input_path)
-        #     fps = cap.get(5)
-        #     frame_width = int(cap.get(3))
-        #     frame_height = int(cap.get(4))
-        #     total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            write_encoding = cap.codec if write_encoding==None else write_encoding
+        elif video_reader=='cv2':
+            fps = cap.get(5)  
+            frame_width = int(cap.get(3)) 
+            frame_height = int(cap.get(4)) 
+            total_images = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            if write_encoding==None:
+                in_enc = int(cap.get(cv2.CAP_PROP_FOURCC))
+                write_encoding = chr(in_enc&0xff) + chr((in_enc>>8)&0xff) + chr((in_enc>>16)&0xff) + chr((in_enc>>24)&0xff)
+
+        print('---------------------------------')
+        print('Video Info:')
+        print('FPS:',fps)
+        print('Total Images:',total_images)
+        print('Frame Width:',frame_width,'Frame Height:',frame_height)
+        print('Video Codec:',write_encoding)
+
 
     out_vid_name = None # dummy name in case input is a directory
     passed_images = []
     failed_images = []
     all_predictions = {}  ## for debug
+
+    print('----------------------------')
+    print('Predicting...')
+    print('----------------------------')
     for i in tqdm(range(0,total_images,pred_batch),mininterval=10):
         if is_video==False:
             img_path = all_images[i]
@@ -108,16 +117,21 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             if i==0:
                 out_vid_name,out_vid_ext = os.path.splitext(input_path.split('/')[-1])
                 out_vid_name = os.path.join(paths_dict['videos'],out_vid_name+'_filtered'+out_vid_ext)
-                if gpu_writer==True:
-                    vid_writer = ffmpegcv.VideoWriterNV(out_vid_name, cap.codec, fps)
-                else:
-                    ## vid_writer = imageio.get_writer(out_vid_name, fps=fps,codec=vid_data['codec'], macro_block_size=1)
-                    vid_writer = ffmpegcv.VideoWriter(out_vid_name, cap.codec, fps)
+                if video_writer=='gpu_ffmpeg':
+                    vid_writer = ffmpegcv.VideoWriterNV(out_vid_name, write_encoding, fps)
+                elif video_writer=='cpu_ffmpeg':
+                    vid_writer = ffmpegcv.VideoWriter(out_vid_name, write_encoding, fps)
+                elif video_writer=='cv2':
+                    fourcc = cv2.VideoWriter_fourcc(*write_encoding)
+                    vid_writer = cv2.VideoWriter(out_vid_name, fourcc, fps, (frame_width, frame_height))
+                elif video_writer=='imageio':
+                    vid_writer = imageio.get_writer(out_vid_name, fps=fps,codec=write_encoding, macro_block_size=1)
+
 
             img_batch = []
             for j in range(0,pred_batch):
 
-                img_path = os.path.join('/dummy_name/',str(i)+'.jpg')
+                img_path = os.path.join('/dummy_name/',str(i*pred_batch+j)+'.jpg')
                 image_name = img_path.split('/')[-1]
                 image_name = os.path.splitext(image_name)[0]
                 ret, img = cap.read()
@@ -129,6 +143,8 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         pred_porn_all = porn_model.predict(img_batch)
 
         for k in range(0,len(img_batch)):
+            img_idx = i*pred_batch+k
+
             img = img_batch[k]
             img_h,img_w = img.shape[:2]
             img_blur = cv2.blur(img.copy(),(int(img_h/2),int(img_w/2)))
@@ -141,18 +157,12 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
         
 
             if is_video==True:
-                if pass_fail_dict!={}:
-                    vid_writer.write(img_blur)
-                    # if gpu_writer==True:
-                    #     vid_writer.write(img_blur)
-                    # else:
-                    #     vid_writer.append_data(img_blur[:,:,::-1])
-                else:
-                    vid_writer.write(img_org)
-                    # if gpu_writer==True:
-                    #     vid_writer.write(img_org)
-                    # else:
-                    #     vid_writer.append_data(img_org[:,:,::-1])
+                video_img = img_blur if pass_fail_dict!={} else img_org
+                if video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2']:
+                    vid_writer.write(video_img)
+                elif video_writer=='imageio':
+                    vid_writer.append_data(video_img[:,:,::-1])
+
 
             ######################
             ## for debug
@@ -162,13 +172,13 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
                     one_pred_img = extract_prediction_points(pred_porn,o,box_color_dict,label_dict,adjust_fraction,img_h,img_w)
                     one_img_pred.append(one_pred_img)
 
-            all_predictions[i] = one_img_pred
+            all_predictions[img_idx] = one_img_pred
             ######################
 
             if pass_fail_dict!={}:
-                failed_images.append(i)
+                failed_images.append(img_idx)
             else:
-                passed_images.append(i)
+                passed_images.append(img_idx)
 
             if pass_fail_dict!={}:#len(pred_porn)!=0:
                 path_write_images = paths_dict['images']
@@ -218,18 +228,9 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             if display_bbox==True:
                 display_multi(img,figsize=figsize,bgr=True)
 
-            # if is_video==True:
-            #     if pass_fail_dict!={}:
-            #         if gpu_writer==True:
-            #                 vid_writer.write(img_blur)
-            #         else:
-            #             vid_writer.append_data(img_blur[:,:,::-1])
-            #     else:
-            #         if gpu_writer==True:
-            #             vid_writer.write(img_org)
-            #         else:
-            #             vid_writer.append_data(img_org[:,:,::-1])
-
+    print('----------------------------')
+    print('Finished Predicting...')
+    print('----------------------------')
     if is_video==True:
         try:
             vid_writer.close()
@@ -239,6 +240,10 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     # return paths_dict,failed_images,passed_images,all_predictions,out_vid_name
     return paths_dict,out_vid_name
 
+
+#############################################################
+## Main
+#############################################################
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path_model",type=str, help="path pretrained model checkpoint")
@@ -263,8 +268,10 @@ parser.add_argument("--start_time", help="start time(seconds) for video trimming
 parser.add_argument("--duration", help="end time(seconds) for video trimming", default=None)
 
 ## extended flags
-parser.add_argument("--gpu_writer", action="store_true")
+parser.add_argument("--video_reader",type=str,default='cv2')
+parser.add_argument("--video_writer",type=str,default='imageio')
 parser.add_argument("--pred_batch", help="for batch prediction", default=1, type=int)
+parser.add_argument("--write_encoding",type=str, help="override the default encoding with which to write the final video")
 
 ## extras
 parser.add_argument("--skip_sound", help="write back video without sound", action="store_true")
@@ -313,7 +320,8 @@ elif is_video==False:
     assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
     assert args.start_time==None, 'start_time can only be used with videos'
     assert args.duration==None, 'duration can only be used with videos'
-
+    assert (args.video_reader in ['gpu_ffmpeg','cpu_ffmpeg','cv2'])==True, 'please select valid video reader from [gpu_ffmpeg,cpu_ffmpeg,cv2]'
+    assert (args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]' 
 
 assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
 assert type(args.img_quality)==int, 'image quality must be a integer value between 1-100'
@@ -369,7 +377,8 @@ paths_dict_all,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_inp
                                     save_txt=args.save_txt,save_original=save_FLAG,save_bbox=args.save_bbox,save_blur=args.save_blur,display_bbox=False,
                                     label_dict=None,img_quality=img_quality,
                                     class_confidence_dict=class_confidence_dict,
-                                    gpu_writer=args.gpu_writer,pred_batch=args.pred_batch)
+                                    video_writer=args.video_writer,video_reader=args.video_reader,
+                                    pred_batch=args.pred_batch,write_encoding=args.write_encoding)
 
 
 if is_video==True and args.skip_sound==False:
@@ -379,4 +388,4 @@ if is_video==True and args.skip_sound==False:
     ##os.remove(out_vid_name)
 
     ffmpeg_command = ['ffmpeg', '-y', '-i', out_vid_name, '-i', path_input, '-c', 'copy', '-map', '0:0', '-map', '1:1', final_vid_path]
-    subprocess.run(ffmpeg_command)
+    subprocess.run(ffmpeg_command,text=False)
