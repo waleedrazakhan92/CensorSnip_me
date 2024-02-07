@@ -33,14 +33,45 @@ Run the command `python3 dummy_main.py` to filter the haram content.
 --save_txt                  (optional images/video) Save the txt files with results in them. 
 --do_trimming               (video) If you want to trim the input video to make a shorter version. Bool flag.
 --write_frames_trim         (video) Write frames from the trimmed video on the disc if you chose to do trimming. Bool flag
---start_time                (video) Start time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
---end_time                  (video) End time in seconds for video trimming. Type int. Value must be less than the size of video in seconds.
+--start_time                (video) Start time in seconds or sexagesimal format for video trimming. Type int/str. Value must be less than the size of video in seconds.
+--duration                  (video) Duration in seconds or sexagesimal format for how long you want to trim the video.
 --skip_sound                (video) Skip the final merging of the audio back to the video for faster inference. Bool flag.
 --num_imgs                  (images) If you want to manually select the number if images you want to process. Type int. Value less than number of frames in a video.
+--pred_batch                (optional images/video) If you want to do batch predictions. Type int. Depends on the size of GPU/RAM.
+--video_reader              (optional video) The reader with which to read the frames from video.
+--video_writer              (optional video) The writer with which to write the final video.
+--write_encoding            (optional video) The encoding in which to write video frames in the final video.
 ```
 
 # Sample commands
 Note that there are certain parameters that you need to set if you're working with videos and others if you're working with audios.
+## Best command (with trimming)
+```
+python3 dummy_main.py \
+    --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
+    --path_input 'explicit_video.mp4' \
+    --path_results '../test_inference/' \
+    --class_confidence_dict 0.7 0.7 0.7 0.7 0.7 \  ## list of 5 probabilities i.e 5 classes in the model
+    --do_trimming \
+    --start_time '0:0:0' \
+    --duration '0:5:0' \
+    --pred_batch 256 \
+    --video_reader 'gpu_ffmpeg' \
+    --video_writer 'gpu_ffmpeg' \
+    --write_encoding 'hevc_nvenc'
+```
+## Best command (without trimming)
+```
+python3 dummy_main.py \
+    --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
+    --path_input 'explicit_video.mp4' \
+    --path_results '../test_inference/' \
+    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --pred_batch 256 \
+    --video_reader 'gpu_ffmpeg' \
+    --video_writer 'gpu_ffmpeg' \
+    --write_encoding 'hevc_nvenc'
+```
 ## Sample Command 1 (complete video):
 In case you want to process the whole video you need to set the flags like these:
 ```
@@ -48,13 +79,21 @@ python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
-    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --class_confidence_dict 0.7 0.7 0.7 0.7 0.7 \  ## list of 5 probabilities i.e 5 classes in the model
 ```
 ## Sample Command 2 (trimmed video):
 In case you want to run the inference on only a certain time frame of a video i.e trim a video, you MUST set the following flags to their values:
+You can either set the values in seconds or sexagesimal format. The sexagesimal format is hh:mm:ss. So the below commant is cropping the video from 0hours:0minutes:0seconds to 0hours:5minutes:0seconds 
+
 --do_trimming            
---start_time 120 
---end_time 420 
+--start_time '0:0:0' 
+--duration '0:5:0' 
+OR
+--do_trimming            
+--start_time 0
+--duration 300 
+
+
 The do_trimming flag will tell the model to first perform trimming on the video. The inference will be run on that trimmed video.
 
 ```
@@ -62,10 +101,10 @@ python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
-    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --class_confidence_dict 0.7 0.7 0.7 0.7 0.7 \  ## list of 5 probabilities i.e 5 classes in the model
     --do_trimming \
-    --start_time 20 \
-    --end_time 40 
+    --start_time '0:0:0' 
+    --duration '0:5:0' 
 ```
 ## Sample Command 3 (video without sound):
 For very long videos the model takes very long time to drop explicit frames and recompile the video with synchronized sound. So if the sound is not important to you then
@@ -76,11 +115,11 @@ python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
     --path_input 'explicit_video.mp4' \
     --path_results '../test_inference/' \
-    --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
+    --class_confidence_dict 0.7 0.7 0.7 0.7 0.7 \  ## list of 5 probabilities i.e 5 classes in the model
     --skip_sound
 ```
 
-## Sample Command 4 (all variables)
+## Sample Command 4 (all important variables)
 ```
 python3 dummy_main.py \
     --path_model '/pretrained_models/best_full_v0_640_aug_v2.pt' \
@@ -88,9 +127,12 @@ python3 dummy_main.py \
     --path_results '../test_inference/' \
     --class_confidence_dict 0.2 0.2 0.2 0.2 0.2 \  ## list of 5 probabilities i.e 5 classes in the model
     --do_trimming \
-    --start_time 120 \
-    --end_time 420 \
-    --skip_sound 
+    --start_time '0:0:0' \
+    --duration '0:5:0' \
+    --pred_batch 256 \
+    --video_reader 'gpu_ffmpeg' \
+    --video_writer 'gpu_ffmpeg' \
+    --write_encoding 'hevc_nvenc'
 ```
 ## Sample Command (images folder):
 If you want to run inference on a directory of images then the following command will run inference on all the images and store them in a desired directory.
