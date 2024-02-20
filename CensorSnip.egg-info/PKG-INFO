@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: CensorSnip
+Version: 0.1
+Summary: A package for performing inference using YOLOv8 model.
+Home-page: https://github.com/techtative/CensorSnip
+Author: Waleed Raza
+Author-email: waleedrazakhan92@gmail.com

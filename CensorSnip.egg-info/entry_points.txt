@@ -1,0 +1,2 @@
+[console_scripts]
+dummy_main = dummy_main:main
