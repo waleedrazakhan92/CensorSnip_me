@@ -252,7 +252,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     return paths_dict,out_vid_name
 
 
-if __name__ == "__main__":
+def main():
     #############################################################
     ## Main
     #############################################################
@@ -414,3 +414,6 @@ if __name__ == "__main__":
 
         ffmpeg_command = ['ffmpeg','-loglevel','error', '-y', '-i', out_vid_name, '-i', path_input, '-c', 'copy', '-map', '0:0', '-map', '1:1', final_vid_path]
         subprocess.run(ffmpeg_command)
+
+if __name__ == "__main__":
+    main()
