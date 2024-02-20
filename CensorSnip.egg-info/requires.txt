@@ -1,7 +1,0 @@
-ffmpegcv
-roboflow
-ipython
-matplotlib
-moviepy
-tqdm
-ultralytics
