@@ -15,7 +15,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'dummy_main = dummy_main:main',
+            'dummy_main=CensorSnip_me.dummy_main:main',
         ],
     },
 
