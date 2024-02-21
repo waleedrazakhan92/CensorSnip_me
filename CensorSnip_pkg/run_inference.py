@@ -10,6 +10,22 @@ from .utils.video_utils import *
 import os
 import cv2
 import shutil
+print('--------------------------')
+module_dir = os.path.dirname(os.path.abspath(__file__))
+    
+# Navigate up one level to the package directory (assuming the module is in censorsnip_pkg)
+package_dir = os.path.dirname(module_dir)
+
+# Define the path to the pretrained models directory relative to the package directory
+pretrained_models_dir = os.path.join(package_dir, 'pretrained_models')
+
+# Assuming the VGG checkpoint is directly in the pretrained_models directory
+pretrained_checkpoint_path = os.path.join(pretrained_models_dir, 'vgg_checkpoint.pth')
+print(module_dir)
+print(package_dir)
+print(pretrained_models_dir)
+print(pretrained_checkpoint_path)
+print('--------------------------')
 
 from ultralytics import YOLO
 import argparse
@@ -254,7 +270,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     return paths_dict,out_vid_name
 
 
-def run(path_input,path_model='./pretrained_models/best_full_v0_640_aug_v2.pt',path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
+def run(path_input,path_model='CensorSnip_pkg/pretrained_models/best_full_v0_640_aug_v2.pt',path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
          num_imgs=None,adjust_fraction=1,img_quality=100,save_FLAG=False,save_bbox=False,save_txt=False,save_blur=False,
          do_trimming=False,write_frames_trim=False,start_time=None,duration=None,
          video_reader='gpu_ffmpeg',video_writer='gpu_ffmpeg',
