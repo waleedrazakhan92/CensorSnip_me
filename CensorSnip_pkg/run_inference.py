@@ -10,22 +10,6 @@ from .utils.video_utils import *
 import os
 import cv2
 import shutil
-print('--------------------------')
-module_dir = os.path.dirname(os.path.abspath(__file__))
-    
-# Navigate up one level to the package directory (assuming the module is in censorsnip_pkg)
-package_dir = os.path.dirname(module_dir)
-
-# Define the path to the pretrained models directory relative to the package directory
-pretrained_models_dir = os.path.join(package_dir, 'pretrained_models')
-
-# Assuming the VGG checkpoint is directly in the pretrained_models directory
-pretrained_checkpoint_path = os.path.join(pretrained_models_dir, 'vgg_checkpoint.pth')
-print(module_dir)
-print(package_dir)
-print(pretrained_models_dir)
-print(pretrained_checkpoint_path)
-print('--------------------------')
 
 from ultralytics import YOLO
 import argparse
@@ -270,7 +254,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     return paths_dict,out_vid_name
 
 
-def run(path_input,path_model='CensorSnip_pkg/pretrained_models/best_full_v0_640_aug_v2.pt',path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
+def run(path_model=None,path_input=None,path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
          num_imgs=None,adjust_fraction=1,img_quality=100,save_FLAG=False,save_bbox=False,save_txt=False,save_blur=False,
          do_trimming=False,write_frames_trim=False,start_time=None,duration=None,
          video_reader='gpu_ffmpeg',video_writer='gpu_ffmpeg',
@@ -279,7 +263,6 @@ def run(path_input,path_model='CensorSnip_pkg/pretrained_models/best_full_v0_640
     ## Main
     #############################################################
 
- 
     ## defaults
     box_color_dict = {0:(255,0,0),
                     1:(0,255,0),
@@ -292,6 +275,8 @@ def run(path_input,path_model='CensorSnip_pkg/pretrained_models/best_full_v0_640
     ###########################
     ## assert checks
     ###########################
+    assert path_model!=None,'Please gie appropriate model path'
+    assert path_input!=None, 'Please give valid input path' 
     if os.path.isfile(path_input)==False and os.path.isdir(path_input)==False:
         print("------------------------------------------------------")
         print("ERROR!!! please make sure the file/directory exists. Exiting program")
@@ -403,7 +388,7 @@ def run(path_input,path_model='CensorSnip_pkg/pretrained_models/best_full_v0_640
         subprocess.run(ffmpeg_command)
 
 if __name__ == "__main__":
-    run(path_input=path_input,path_results=path_results,class_confidence_dict=class_confidence_dict,
+    run(path_model=path_model,path_input=path_input,path_results=path_results,class_confidence_dict=class_confidence_dict,
          num_imgs=num_imgs,adjust_fraction=adjust_fraction,img_quality=img_quality,
          save_FLAG=save_FLAG,save_bbox=save_bbox,save_txt=save_txt,save_blur=save_blur,
          do_trimming=do_trimming,write_frames_trim=write_frames_trim,start_time=start_time,duration=duration,
