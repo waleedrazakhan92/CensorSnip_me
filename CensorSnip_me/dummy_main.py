@@ -1,5 +1,4 @@
 import os
-print(os.listdir())
 from .utils.display_utils import *
 from .utils.misc_utils import *
 from .utils.prediction_utils import *
