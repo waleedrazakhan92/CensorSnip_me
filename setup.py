@@ -15,7 +15,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'dummy_main=CensorSnip_pkg.run_inference:main',
+            'run_inference=CensorSnip_pkg.run_inference:main',
         ],
     },
 
