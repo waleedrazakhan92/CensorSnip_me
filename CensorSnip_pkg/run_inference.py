@@ -254,7 +254,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     return paths_dict,out_vid_name
 
 
-def run(path_input,path_model='../pretrained_models/best_full_v0_640_aug_v2.pt',path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
+def run(path_input,path_model='./pretrained_models/best_full_v0_640_aug_v2.pt',path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
          num_imgs=None,adjust_fraction=1,img_quality=100,save_FLAG=False,save_bbox=False,save_txt=False,save_blur=False,
          do_trimming=False,write_frames_trim=False,start_time=None,duration=None,
          video_reader='gpu_ffmpeg',video_writer='gpu_ffmpeg',
@@ -387,7 +387,7 @@ def run(path_input,path_model='../pretrained_models/best_full_v0_640_aug_v2.pt',
         subprocess.run(ffmpeg_command)
 
 if __name__ == "__main__":
-    run(path_input=path_input,path_model=path_model,path_results=path_results,class_confidence_dict=class_confidence_dict,
+    run(path_input=path_input,path_results=path_results,class_confidence_dict=class_confidence_dict,
          num_imgs=num_imgs,adjust_fraction=adjust_fraction,img_quality=img_quality,
          save_FLAG=save_FLAG,save_bbox=save_bbox,save_txt=save_txt,save_blur=save_blur,
          do_trimming=do_trimming,write_frames_trim=write_frames_trim,start_time=start_time,duration=duration,
