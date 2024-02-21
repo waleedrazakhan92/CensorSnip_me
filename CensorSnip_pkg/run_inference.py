@@ -275,7 +275,7 @@ def run(path_model=None,path_input=None,path_results='model_results/',class_conf
     ###########################
     ## assert checks
     ###########################
-    assert path_model!=None,'Please gie appropriate model path'
+    assert path_model!=None,'Please give appropriate model path'
     assert path_input!=None, 'Please give valid input path' 
     if os.path.isfile(path_input)==False and os.path.isdir(path_input)==False:
         print("------------------------------------------------------")
