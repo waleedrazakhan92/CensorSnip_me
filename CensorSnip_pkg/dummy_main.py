@@ -254,7 +254,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     return paths_dict,out_vid_name
 
 
-def main(path_model,path_input,path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
+def main(path_input,path_model='../pretrained_models/best_full_v0_640_aug_v2.pt',path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
          num_imgs=None,adjust_fraction=1,img_quality=100,save_FLAG=False,save_bbox=False,save_txt=False,save_blur=False,
          do_trimming=False,write_frames_trim=False,start_time=None,duration=None,
          video_reader='gpu_ffmpeg',
@@ -387,4 +387,8 @@ def main(path_model,path_input,path_results='model_results/',class_confidence_di
         subprocess.run(ffmpeg_command)
 
 if __name__ == "__main__":
-    main()
+    main(path_input,path_model,path_results,class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
+         num_imgs=None,adjust_fraction=1,img_quality=100,save_FLAG=False,save_bbox=False,save_txt=False,save_blur=False,
+         do_trimming=False,write_frames_trim=False,start_time=None,duration=None,
+         video_reader='gpu_ffmpeg',
+         pred_batch=1,write_encoding=None,skip_sound=False)
