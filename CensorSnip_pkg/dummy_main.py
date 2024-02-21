@@ -1,3 +1,4 @@
+
 import os
 from .utils.display_utils import *
 from .utils.misc_utils import *
@@ -253,47 +254,16 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
     return paths_dict,out_vid_name
 
 
-def main():
+def main(path_model,path_input,path_results='model_results/',class_confidence_dict=[0.5,0.5,0.5,0.5,0.5],
+         num_imgs=None,adjust_fraction=1,img_quality=100,save_FLAG=False,save_bbox=False,save_txt=False,save_blur=False,
+         do_trimming=False,write_frames_trim=False,start_time=None,duration=None,
+         video_reader='gpu_ffmpeg',
+         pred_batch=1,write_encoding=None,skip_sound=False):
     #############################################################
     ## Main
     #############################################################
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--path_model",type=str, help="path pretrained model checkpoint")
-    parser.add_argument("--path_input",type=str, help="path of input video or a folder of images")
-    parser.add_argument("--path_results",type=str, help="path to save all the results", default='model_results/')
-    parser.add_argument("--class_confidence_dict",default=[0.5,0.5,0.5,0.5,0.5], action='store',nargs='*',
-                            dest='class_confidence_dict',type=float,help="dictionary of probabilities with desired tolerance level for predictions")
-    parser.add_argument("--num_imgs", help="number of images you want to process", default=None, type=int)
-    parser.add_argument("--adjust_fraction", help="fraction [0-1] you want to manually adjust bounding box", default=1, type=float)
-
-    parser.add_argument("--img_quality", help="manually adjust the image image quality of the saved images (JPEG)", default=100, type=int)
-    parser.add_argument("--save_FLAG", help="flag to save (save bbox,blur,original,text file)", action="store_true")
-    parser.add_argument("--save_bbox", help="flag to save bbox", action="store_true")
-    parser.add_argument("--save_txt", help="flag to save text file", action="store_true")
-    parser.add_argument("--save_blur", help="flag to save blur,", action="store_true")
-
-    ## trimming flags
-    parser.add_argument("--do_trimming", help="do video trimming or not", action="store_true")
-    ##parser.add_argument("--write_video_trim", help="write video after trimming", action="store_true")
-    parser.add_argument("--write_frames_trim", help="write frames of the trimmed video", action="store_true")
-    parser.add_argument("--start_time", help="start time(seconds) for video trimming", default=None)
-    parser.add_argument("--duration", help="end time(seconds) for video trimming", default=None)
-
-    ## extended flags
-    parser.add_argument("--video_reader",type=str,default='gpu_ffmpeg')
-    parser.add_argument("--video_writer",type=str,default='gpu_ffmpeg')
-    parser.add_argument("--pred_batch", help="for batch prediction", default=1, type=int)
-    parser.add_argument("--write_encoding",default=None,type=str, help="override the default encoding with which to write the final video")
-
-    ## extras
-    parser.add_argument("--skip_sound", help="write back video without sound", action="store_true")
-
-    args = parser.parse_args()
-
-    print('-------------------------')
-    print(args)
-
+ 
     ## defaults
     box_color_dict = {0:(255,0,0),
                     1:(0,255,0),
@@ -306,75 +276,75 @@ def main():
     ###########################
     ## assert checks
     ###########################
-    if os.path.isfile(args.path_input)==False and os.path.isdir(args.path_input)==False:
+    if os.path.isfile(path_input)==False and os.path.isdir(path_input)==False:
         print("------------------------------------------------------")
         print("ERROR!!! please make sure the file/directory exists. Exiting program")
         sys.exit(0)
 
     ## check if video or a directory
-    is_video = True if os.path.isfile(args.path_input) else False
+    is_video = True if os.path.isfile(path_input) else False
 
     ## working with videos
     if is_video==True:
-        if args.do_trimming==True:
+        if do_trimming==True:
             assert is_video==True, 'make sure *path_input* is a video file as trimming can only be done on a video'
             ##assert args.write_frames_trim==True, 'when do_trimming is set to True, make sure you set the write_frames_trim'
-            assert (args.start_time!=None and args.duration!=None), 'set positive integer values for the *start_time* and *duration*'
+            assert (start_time!=None and duration!=None), 'set positive integer values for the *start_time* and *duration*'
             ##assert args.save_FLAG==True, 'set save_FLAG flag == True in order to utilize do_trimming'
 
-        if args.num_imgs!=None:
+        if num_imgs!=None:
             assert is_video==False, 'To use num_imgs make sure the input path is a directiory containing images'
 
-        assert (args.video_reader in ['gpu_ffmpeg','cpu_ffmpeg','cv2'])==True, 'please select valid video reader from [gpu_ffmpeg,cpu_ffmpeg,cv2]'
-        assert (args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]'
+        assert (video_reader in ['gpu_ffmpeg','cpu_ffmpeg','cv2'])==True, 'please select valid video reader from [gpu_ffmpeg,cpu_ffmpeg,cv2]'
+        assert (video_writer in ['gpu_ffmpeg','cpu_ffmpeg','cv2','imageio'])==True, 'please select valid video writer from [gpu_ffmpeg,cpu_ffmpeg,cv2,imageio]'
 
-        if args.write_encoding!=None:
-            if args.video_writer in ['gpu_ffmpeg','cpu_ffmpeg']:
-                assert (args.write_encoding in ['hevc_nvenc','h264_nvenc'])==True, 'please select valid encoding from [hevc_nvenc,h264_nvenc]'
-            elif args.video_writer=='cv2':
-                assert (args.write_encoding in ['XVID','mp4v','mjpg'])==True, 'please select valid encoding from [XVID,mp4v,mjpg]'
-            elif args.video_writer=='imageio':
-                assert (args.write_encoding in ['hevc','h264'])==True, 'please select valid encoding from [hevc,h264]'
+        if write_encoding!=None:
+            if video_writer in ['gpu_ffmpeg','cpu_ffmpeg']:
+                assert (write_encoding in ['hevc_nvenc','h264_nvenc'])==True, 'please select valid encoding from [hevc_nvenc,h264_nvenc]'
+            elif video_writer=='cv2':
+                assert (write_encoding in ['XVID','mp4v','mjpg'])==True, 'please select valid encoding from [XVID,mp4v,mjpg]'
+            elif video_writer=='imageio':
+                assert (write_encoding in ['hevc','h264'])==True, 'please select valid encoding from [hevc,h264]'
 
 
     ## working with images
     elif is_video==False:
-        assert args.do_trimming==False, 'do_trimming can only be used with videos'
-        assert args.skip_sound==False, 'skip_sound can only be used with videos'
+        assert do_trimming==False, 'do_trimming can only be used with videos'
+        assert skip_sound==False, 'skip_sound can only be used with videos'
         ##assert args.write_video_trim==False, 'write_video_trim can only be used with videos'
-        assert args.write_frames_trim==False, 'write_frames_trim can only be used with videos'
-        assert args.start_time==None, 'start_time can only be used with videos'
-        assert args.duration==None, 'duration can only be used with videos'
+        assert write_frames_trim==False, 'write_frames_trim can only be used with videos'
+        assert start_time==None, 'start_time can only be used with videos'
+        assert duration==None, 'duration can only be used with videos'
 
-    assert len(args.class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
-    assert type(args.img_quality)==int, 'image quality must be a integer value between 1-100'
+    assert len(class_confidence_dict)<=len(class_confidence_dict), 'length of class_confidence_dict must be less than 5, as there are only 5 classes in the model '
+    assert type(img_quality)==int, 'image quality must be a integer value between 1-100'
 
     ###########################
     ## load model
     ###########################
-    custom_yolo = YOLO(args.path_model)
+    custom_yolo = YOLO(path_model)
 
     ###########################
     ## read variables
     ###########################
-    path_input = args.path_input
-    path_write_main = args.path_results
-    adjust_fraction = args.adjust_fraction
-    num_imgs = args.num_imgs
+    path_input = path_input
+    path_write_main = path_results
+    adjust_fraction = adjust_fraction
+    num_imgs = num_imgs
 
-    save_FLAG = args.save_FLAG
-    img_quality = args.img_quality
+    save_FLAG = save_FLAG
+    img_quality = img_quality
 
 
-    for i in range(0,len(args.class_confidence_dict)):
-        class_confidence_dict[i] = args.class_confidence_dict[i]
+    for i in range(0,len(class_confidence_dict)):
+        class_confidence_dict[i] = class_confidence_dict[i]
 
     ## for trimming make sure you input video in the input_path
-    if args.do_trimming==True:
+    if do_trimming==True:
         ##write_video_trim = args.write_video_trim
-        write_frames_trim = args.write_frames_trim
-        start_time = args.start_time
-        duration = args.duration
+        write_frames_trim = write_frames_trim
+        start_time = start_time
+        duration = duration
 
         trimmed_vid_path,path_frames = trim_video_and_extract_frames(path_input,path_write_main,start_time,duration,
                                                         write_video=True,write_frames=write_frames_trim,save_ext='.jpg')
@@ -397,14 +367,14 @@ def main():
     paths_dict_all,out_vid_name = custom_yolov8_inference_video(custom_yolo,path_input,path_write_main,
                                         is_video,adjust_fraction=adjust_fraction,
                                         num_imgs=num_imgs,figsize=(6,3),box_color_dict=box_color_dict,
-                                        save_txt=args.save_txt,save_original=save_FLAG,save_bbox=args.save_bbox,save_blur=args.save_blur,display_bbox=False,
+                                        save_txt=save_txt,save_original=save_FLAG,save_bbox=save_bbox,save_blur=save_blur,display_bbox=False,
                                         label_dict=None,img_quality=img_quality,
                                         class_confidence_dict=class_confidence_dict,
-                                        video_writer=args.video_writer,video_reader=args.video_reader,
-                                        pred_batch=args.pred_batch,write_encoding=args.write_encoding)
+                                        video_writer=video_writer,video_reader=video_reader,
+                                        pred_batch=pred_batch,write_encoding=write_encoding)
 
 
-    if is_video==True and args.skip_sound==False:
+    if is_video==True and skip_sound==False:
         print('----------------------------')
         print('Adding sound back...')
         print('----------------------------')
