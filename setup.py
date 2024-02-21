@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='CensorSnip_me',
+    name='CensorSnip',
     version='0.1',
     packages=find_packages(),
     install_requires=[
@@ -15,7 +15,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'dummy_main=CensorSnip_me.dummy_main:main',
+            'dummy_main=CensorSnip_pkg.dummy_main:main',
         ],
     },
 
