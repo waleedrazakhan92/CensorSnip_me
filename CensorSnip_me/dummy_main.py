@@ -1,7 +1,9 @@
-from utils.display_utils import *
-from utils.misc_utils import *
-from utils.prediction_utils import *
-from utils.video_utils import *
+import os
+print(os.listdir())
+from .utils.display_utils import *
+from .utils.misc_utils import *
+from .utils.prediction_utils import *
+from .utils.video_utils import *
 ############################
 ## Inference utils
 ############################
