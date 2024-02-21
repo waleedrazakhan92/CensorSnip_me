@@ -10,7 +10,7 @@ from ffmpegcv import VideoWriter
 from tqdm import tqdm
 import shutil
 
-from Censorsnip_me.utils.misc_utils import make_folders_multi
+from CensorSnip_pkg.utils.misc_utils import make_folders_multi
 
 from datetime import timedelta
 import subprocess
