@@ -4,13 +4,13 @@ import numpy as np
 
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_audio
-from moviepy.editor import VideoFileClip, concatenate_videoclips
+from moviepy import VideoFileClip, concatenate_videoclips
 from ffmpegcv import VideoWriter
 
 from tqdm import tqdm
 import shutil
 
-from utils.misc_utils import make_folders_multi
+from CensorSnip_pkg.utils.misc_utils import make_folders_multi
 
 from datetime import timedelta
 import subprocess

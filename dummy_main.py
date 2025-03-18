@@ -115,6 +115,7 @@ def custom_yolov8_inference_video(porn_model,input_path,path_write,is_video,box_
             image_name = img_path.split('/')[-1]
             image_name = os.path.splitext(image_name)[0]
             img = cv2.imread(img_path)
+            img_batch = [img]
         else:
             if i==0:
                 out_vid_name,out_vid_ext = os.path.splitext(input_path.split('/')[-1])
